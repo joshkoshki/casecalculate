@@ -431,6 +431,29 @@ h1.q{
 /* ---------- Thank you ---------- */
 .thankyou{ padding-top:60px; text-align:center; }
 </style>
+<!-- ============================================================
+     META (FACEBOOK) PIXEL — base tracking code
+     ------------------------------------------------------------
+     Replace YOUR_PIXEL_ID_HERE below with your real Pixel ID,
+     found in Meta Events Manager > your pixel > Settings.
+     This loads the pixel and fires a PageView automatically.
+     The actual "Lead" conversion event fires separately, only
+     when someone successfully submits the calculator — see the
+     fbq('track', 'Lead') call in the submit handler further
+     down in this file.
+     ============================================================ -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', 'YOUR_PIXEL_ID_HERE');
+fbq('track', 'PageView');
+</script>
 </head>
 <body>
 <div id="app"></div>
@@ -1253,6 +1276,15 @@ function renderReveal(app){
       // visitor's experience should never break over this — log
       // it and continue to the thank-you screen regardless.
       console.error('Lead submission failed to send:', err);
+    }
+
+    // Meta Pixel conversion event — fires here, not earlier in
+    // the flow, so Meta only counts someone as a "Lead" once
+    // they've actually completed the form and hit Submit, not
+    // just started the calculator. This is what the Facebook
+    // Ads conversion event should be pointed at.
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead');
     }
 
     state.screen = 'thankyou';
