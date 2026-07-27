@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Case Calculator — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Editorial / luxury direction: warm vellum paper, ink charcoal
+   text, oxblood + brushed-gold accents. Ledger / legal-document
+   motif throughout (hairline rules, numbered sections, wax-seal
+   style reveal badge) rather than generic tech-quiz styling.
+   ============================================================ */
+:root{
+  --paper: #EFE8D8;
+  --paper-soft: #F6F1E6;
+  --surface: #FCFAF3;
+  --ink: #211D17;
+  --ink-soft: #5B5648;
+  --ink-faint: #948D7A;
+  --accent: #6E2332;       /* oxblood — primary CTA, selected states */
+  --accent-soft: #F3E4E2;  /* pale oxblood tint for selected backgrounds */
+  --gold: #92793C;         /* brushed gold — progress, dividers, badges */
+  --gold-soft: #E9DEC4;
+  --line: rgba(33,29,23,0.14);
+  --line-strong: rgba(33,29,23,0.28);
+  --danger: #6E2332;
+  --radius: 2px;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --max-w: 480px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:#17140F;
+  color:var(--ink);
+  font-family:var(--sans);
+  min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+#app{
+  width:100%;
+  max-width:var(--max-w);
+  margin:0 auto;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  background:
+    linear-gradient(var(--paper-soft), var(--paper-soft)) top/100% 340px no-repeat,
+    var(--paper);
+}
+/* On wider viewports (desktop preview), frame the phone-width
+   experience so it reads as a mobile app being tested, not a
+   stretched desktop layout. Mobile itself stays edge-to-edge. */
+@media (min-width: 560px){
+  body{ padding:32px 0; }
+  #app{
+    min-height:calc(100dvh - 64px);
+    box-shadow:0 30px 80px -20px rgba(0,0,0,0.55);
+    border-radius:18px;
+    overflow:hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
+
+/* ---------- Header / progress ---------- */
+.header{
+  padding:22px 24px 0 24px;
+}
+.brand{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:15px;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  color:var(--ink);
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.brand .mark{ color:var(--accent); }
+
+/* Progress: hairline "document rule" ticks, filled in gold as
+   the person moves through the intake — a ledger metaphor
+   rather than a generic percentage bar. */
+.progress-rules{
+  display:flex;
+  gap:4px;
+  margin-top:18px;
+}
+.progress-rules span{
+  height:2px;
+  flex:1;
+  background:var(--line);
+  border-radius:1px;
+  overflow:hidden;
+  position:relative;
+}
+.progress-rules span.done{ background:var(--gold); }
+.progress-rules span.current::after{
+  content:'';
+  position:absolute; inset:0;
+  background:var(--ink);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{ 0%,100%{opacity:.15;} 50%{opacity:.55;} }
+.step-label{
+  margin-top:10px;
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  font-weight:600;
+}
+
+/* ---------- Main content ---------- */
+.content{
+  flex:1;
+  padding:28px 24px 140px 24px;
+  display:flex;
+  flex-direction:column;
+}
+.eyebrow{
+  font-size:11px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--accent);
+  font-weight:600;
+  margin-bottom:10px;
+}
+h1.q{
+  font-family:var(--serif);
+  font-weight:500;
+  font-style:italic;
+  font-size:28px;
+  line-height:1.22;
+  margin:0 0 10px 0;
+  color:var(--ink);
+}
+.sub{
+  font-size:14.5px;
+  line-height:1.5;
+  color:var(--ink-soft);
+  margin:0 0 26px 0;
+}
+
+/* ---------- Options ---------- */
+.options{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.opt{
+  text-align:left;
+  background:var(--surface);
+  border:1px solid var(--line-strong);
+  border-left:3px solid transparent;
+  border-radius:var(--radius);
+  padding:16px 18px;
+  font-family:var(--sans);
+  font-size:15.5px;
+  font-weight:500;
+  color:var(--ink);
+  cursor:pointer;
+  transition:border-color .15s ease, background .15s ease, transform .1s ease;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.opt:hover{ border-color:var(--gold); }
+.opt:active{ transform:scale(0.99); }
+.opt .check{
+  width:18px; height:18px;
+  border:1.5px solid var(--line-strong);
+  border-radius:50%;
+  flex:0 0 auto;
+  position:relative;
+}
+.opt.multi .check{ border-radius:3px; }
+.opt.selected{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  border-left-color:var(--accent);
+}
+.opt.selected .check{ border-color:var(--accent); background:var(--accent); }
+.opt.selected .check::after{
+  content:'';
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.opt.selected.multi .check::after{
+  content:'✓'; color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center;
+}
+.opt.selected:not(.multi) .check::after{
+  content:''; position:absolute; inset:4px; background:#fff; border-radius:50%;
+}
+.opt .sub-note{ font-size:12px; color:var(--ink-faint); font-weight:400; }
+.opt-not-sure{
+  color:var(--ink-faint);
+  font-style:italic;
+}
+
+/* ---------- Footer / nav ---------- */
+.footer{
+  position:sticky; bottom:0;
+  width:100%;
+  background:linear-gradient(180deg, rgba(239,232,216,0) 0%, var(--paper) 30%);
+  padding:20px 24px 26px 24px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.btn{
+  font-family:var(--sans);
+  font-weight:600;
+  font-size:15px;
+  letter-spacing:0.01em;
+  border-radius:var(--radius);
+  padding:16px 20px;
+  border:none;
+  cursor:pointer;
+  width:100%;
+  transition:opacity .15s ease, transform .1s ease;
+}
+.btn:active{ transform:scale(0.99); }
+.btn-primary{
+  background:var(--ink);
+  color:var(--paper-soft);
+}
+.btn-primary:disabled{ opacity:0.35; cursor:not-allowed; }
+.btn-ghost{
+  background:transparent;
+  color:var(--ink-soft);
+  border:1px solid var(--line-strong);
+}
+.back-link{
+  background:none; border:none;
+  color:var(--ink-faint);
+  font-family:var(--sans);
+  font-size:13px;
+  text-align:left;
+  padding:0;
+  cursor:pointer;
+  margin-bottom:4px;
+  align-self:flex-start;
+}
+
+/* ---------- Landing ---------- */
+.landing{
+  padding-top:60px;
+  text-align:left;
+}
+.landing .mark-lg{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:13px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:18px;
+  display:block;
+}
+.landing h1{
+  font-family:var(--serif);
+  font-weight:500;
+  font-size:38px;
+  line-height:1.12;
+  margin:0 0 18px 0;
+}
+.landing p.lead{
+  font-size:15.5px;
+  line-height:1.6;
+  color:var(--ink-soft);
+  margin:0 0 34px 0;
+  max-width:38ch;
+}
+/* Signature element: a ledger-tape digit readout, evoking an
+   adding machine / old legal accounting tape. Ticks through
+   digits on load, then settles to dashes — signals "this is a
+   calculator" without ever showing a fabricated number. */
+.readout{
+  font-family:'Inter', monospace;
+  font-variant-numeric:tabular-nums;
+  font-weight:600;
+  font-size:34px;
+  letter-spacing:0.02em;
+  color:var(--accent);
+  margin:22px 0 6px 0;
+  display:flex;
+  align-items:baseline;
+  gap:2px;
+}
+.readout .digit{
+  display:inline-block;
+  min-width:0.62ch;
+}
+.readout .digit.tick{
+  animation:tickDigit 1.1s steps(10) 1 both;
+}
+@keyframes tickDigit{
+  0%{ opacity:.3; transform:translateY(2px); }
+  100%{ opacity:1; transform:translateY(0); }
+}
+.readout-label{
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin:0 0 30px 0;
+}
+
+.trust-row{
+  display:flex;
+  gap:18px;
+  margin:34px 0 8px 0;
+  padding-top:22px;
+  border-top:1px solid var(--line);
+}
+.trust-item{
+  font-size:11px;
+  color:var(--ink-faint);
+  line-height:1.4;
+}
+.trust-item b{ display:block; color:var(--ink); font-family:var(--serif); font-size:18px; font-weight:500; }
+
+/* ---------- Stop screens ---------- */
+.stop{ padding-top:50px; }
+.stop .seal{
+  width:56px; height:56px;
+  border:1.5px solid var(--ink);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--serif); font-style:italic; font-size:22px;
+  margin-bottom:26px;
+}
+.stop h1{
+  font-family:var(--serif); font-weight:500; font-style:italic;
+  font-size:26px; line-height:1.25; margin:0 0 14px 0;
+}
+.stop p{ font-size:14.5px; line-height:1.6; color:var(--ink-soft); }
+
+/* ---------- Reveal ---------- */
+.reveal{ padding-top:36px; text-align:center; }
+.reveal .eyebrow{ text-align:center; }
+.reveal-badge{
+  width:180px; height:180px;
+  border:1.5px solid var(--gold);
+  border-radius:50%;
+  margin:22px auto 26px auto;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  animation:badgeIn .6s cubic-bezier(.16,1,.3,1) both;
+}
+.reveal-badge::before{
+  content:'';
+  position:absolute; inset:8px;
+  border:1px solid var(--gold-soft);
+  border-radius:50%;
+}
+@keyframes badgeIn{
+  0%{ opacity:0; transform:scale(0.85); }
+  100%{ opacity:1; transform:scale(1); }
+}
+.reveal-badge .tier-text{
+  font-family:var(--serif);
+  font-style:italic;
+  font-weight:500;
+  font-size:19px;
+  line-height:1.25;
+  padding:0 18px;
+}
+.reveal h1{
+  font-family:var(--serif); font-weight:500; font-size:24px;
+  margin:0 0 12px 0; line-height:1.3;
+}
+.reveal p{ font-size:14.5px; line-height:1.6; color:var(--ink-soft); max-width:36ch; margin:0 auto; }
+.disclaimer{
+  margin-top:30px;
+  padding-top:20px;
+  border-top:1px solid var(--line);
+  font-size:11.5px;
+  line-height:1.6;
+  color:var(--ink-faint);
+  text-align:left;
+}
+
+/* ---------- Text input screens ---------- */
+.field{ margin-bottom:16px; }
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-bottom:8px;
+}
+.field input, .field textarea{
+  width:100%;
+  background:var(--surface);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  font-family:var(--sans);
+  font-size:15.5px;
+  color:var(--ink);
+}
+.field input:focus, .field textarea:focus{
+  outline:2px solid var(--accent);
+  outline-offset:1px;
+}
+.field textarea{ resize:vertical; min-height:120px; }
+.consent{
+  font-size:11.5px;
+  line-height:1.6;
+  color:var(--ink-faint);
+  margin-top:6px;
+}
+
+/* ---------- Thank you ---------- */
+.thankyou{ padding-top:60px; text-align:center; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   DATA MODEL
+   ------------------------------------------------------------
+   Every question below carries a `pts` value per option. Points
+   are SUMMED across every question actually asked, then
+   normalized against the max possible points for that person's
+   specific path (their path length varies because categories
+   are multi-select and the FEHA gate can drop a category).
+   That percentage maps to one of 9 tiers.
+
+   >>> POINT VALUES BELOW ARE PLACEHOLDERS <<<
+   Per the spec: these are rough, defensible-order-of-magnitude
+   estimates for prototyping the mechanism only. Before this
+   becomes a real, live calculator, an attorney at the firm
+   needs to sign off on (or replace) every weight here — that's
+   a case-value judgment call, not an engineering one.
+
+   "Not sure" options intentionally score low/neutral rather
+   than zero — someone not knowing an answer isn't evidence
+   against their case, but a pattern of many "not sure" answers
+   still nets out to a lower, more conservative estimate, and
+   is flagged separately as a low-confidence lead (see
+   `notSureCount` in state).
+   ============================================================ */
+
+const TIERS = [
+  { label: 'Low five figures',   range: '$10K–$33K',   floor: 10000,    ceiling: 33000   },
+  { label: 'Mid five figures',   range: '$33K–$66K',   floor: 33000,    ceiling: 66000   },
+  { label: 'High five figures',  range: '$66K–$99K',   floor: 66000,    ceiling: 99000   },
+  { label: 'Low six figures',    range: '$100K–$233K', floor: 100000,   ceiling: 233000  },
+  { label: 'Mid six figures',    range: '$233K–$466K', floor: 233000,   ceiling: 466000  },
+  { label: 'High six figures',   range: '$466K–$699K', floor: 466000,   ceiling: 699000  },
+  { label: 'Low seven figures',  range: '$700K–$2.3M', floor: 700000,   ceiling: 2300000 },
+  { label: 'Mid seven figures',  range: '$2.3M–$5.6M', floor: 2300000,  ceiling: 5600000 },
+  { label: 'High seven figures', range: '$5.6M+',      floor: 5600000,  ceiling: null    },
+];
+
+// Displays the number a viewer would actually read as matching
+// the tier's low/mid/high label — the midpoint of the range,
+// not the floor (showing "$466,000" for "High six figures"
+// reads as barely six figures, not "high"). The open-ended top
+// tier has no ceiling, so it stays a floor with a "+".
+function tierDisplayValue(tier){
+  if (tier.ceiling == null) return '$' + tier.floor.toLocaleString('en-US') + '+';
+  const mid = Math.round((tier.floor + tier.ceiling) / 2 / 1000) * 1000;
+  return '$' + mid.toLocaleString('en-US');
+}
+
+// ---- Gate questions -----------------------------------------
+const Q_REPRESENTED = {
+  id: 'represented',
+  title: 'Are you currently working with a lawyer on this matter?',
+  sub: 'Just so we route you correctly — no wrong answer here.',
+  multi: false,
+  options: [
+    { label: 'No, not yet', pts: 0 },
+    { label: 'Yes, I already have a lawyer', pts: 0, hardstop: 'represented' },
+  ],
+};
+
+const Q_SOL = {
+  id: 'sol',
+  title: 'When did the most recent incident happen?',
+  sub: 'California generally requires filing within 3 years — this confirms your timing works.',
+  multi: false,
+  options: [
+    { label: 'Within the last year', pts: 3 },
+    { label: '1–2 years ago', pts: 2 },
+    { label: '2–3 years ago', pts: 1 },
+    { label: 'More than 3 years ago', pts: 0, hardstop: 'sol' },
+  ],
+};
+
+const Q_FEHA = {
+  id: 'feha',
+  title: 'How many people work at the company?',
+  sub: 'California sets a minimum company size for discrimination and retaliation claims.',
+  multi: false,
+  options: [
+    { label: '5 or more', pts: 2 },
+    { label: 'Fewer than 5', pts: 0, hardstop: 'feha' },
+    { label: "I'm not sure", pts: 1, notSure: true },
+  ],
+};
+
+// ---- Shared background (asked once, regardless of how many
+// categories were selected) ------------------------------------
+const SHARED_QUESTIONS = [
+  {
+    id: 'tenure',
+    title: 'How long did you work there?',
+    sub: 'Longer tenure generally strengthens both liability and damages.',
+    multi: false,
+    options: [
+      { label: 'Less than 1 year', pts: 1 },
+      { label: '1–3 years', pts: 2 },
+      { label: '3–5 years', pts: 3 },
+      { label: '5–10 years', pts: 4 },
+      { label: '10+ years', pts: 5 },
+    ],
+  },
+  {
+    id: 'companySize',
+    title: "What's the rough size of the company?",
+    sub: 'Company size can be a signal for resources and how a case tends to resolve.',
+    multi: false,
+    options: [
+      { label: '5–15 employees', pts: 1 },
+      { label: '16–50 employees', pts: 2 },
+      { label: '51–200 employees', pts: 3 },
+      { label: '201+ employees', pts: 4 },
+      { label: "Not sure", pts: 1, notSure: true },
+    ],
+  },
+  {
+    id: 'contract',
+    title: "What's your employment status?",
+    sub: 'This affects which legal theories may apply.',
+    multi: false,
+    options: [
+      { label: 'At-will (no contract)', pts: 1 },
+      { label: 'Union member / collective bargaining agreement', pts: 2 },
+      { label: 'Individual employment contract', pts: 3 },
+      { label: "Not sure", pts: 1, notSure: true },
+    ],
+  },
+  {
+    id: 'documentation',
+    title: 'Do you have any documentation of what happened?',
+    sub: 'Emails, texts, screenshots, write-ups, or anything saved in writing.',
+    multi: false,
+    options: [
+      { label: 'Yes, several things saved', pts: 4 },
+      { label: 'Yes, a little', pts: 2 },
+      { label: 'No documentation', pts: 0 },
+      { label: "Not sure / haven't checked", pts: 1, notSure: true },
+    ],
+  },
+];
+
+// ---- Category-specific tracks ---------------------------------
+// Order within each track: most concrete / identity-defining
+// first, most abstract or sensitive last.
+const TRACKS = {
+  discrimination: {
+    label: 'Discrimination',
+    questions: [
+      {
+        id: 'd_protectedClass',
+        title: 'What were you discriminated against for?',
+        sub: 'Select the category that best fits your situation.',
+        multi: false,
+        options: [
+          { label: 'Disability or medical condition', pts: 3 },
+          { label: 'Race or national origin', pts: 3 },
+          { label: 'Sex, gender, or pregnancy', pts: 3 },
+          { label: 'Age (40+)', pts: 3 },
+          { label: 'Religion', pts: 3 },
+          { label: 'Something else protected by law', pts: 2 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'd_adverseAction',
+        title: 'What happened as a result?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'I was fired', pts: 4 },
+          { label: 'I was demoted', pts: 3 },
+          { label: 'Pay or hours were cut', pts: 2 },
+          { label: 'Something else', pts: 1 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'd_timeline',
+        title: 'How soon after the employer learned about this did it happen?',
+        sub: 'e.g. after they learned your age, disability, pregnancy, etc.',
+        multi: false,
+        options: [
+          { label: 'Within days', pts: 4 },
+          { label: 'Within a few weeks', pts: 3 },
+          { label: 'Within a few months', pts: 2 },
+          { label: 'Longer than that', pts: 1 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'd_comparator',
+        title: 'Were coworkers outside your situation treated better?',
+        sub: 'Same role, same performance, different treatment.',
+        multi: false,
+        options: [
+          { label: 'Yes, clearly', pts: 4 },
+          { label: 'I think so', pts: 2 },
+          { label: 'No', pts: 0 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'd_performance',
+        title: 'Were you ever formally disciplined before this happened?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'No, clean record', pts: 4 },
+          { label: 'One minor incident', pts: 2 },
+          { label: 'Documented, repeated issues', pts: 0 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+    ],
+  },
+
+  retaliation: {
+    label: 'Retaliation',
+    questions: [
+      {
+        id: 'r_activity',
+        title: 'What did you report or push back on?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Harassment or discrimination', pts: 4 },
+          { label: 'A safety issue', pts: 3 },
+          { label: 'A wage or pay issue', pts: 3 },
+          { label: 'I was a witness in someone else\u2019s complaint', pts: 3 },
+          { label: 'Something else', pts: 2 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'r_reportedTo',
+        title: 'Who did you report it to?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'HR', pts: 4 },
+          { label: 'My manager or supervisor', pts: 3 },
+          { label: 'A government agency', pts: 4 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'r_adverseAction',
+        title: 'What happened after you reported it?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'I was fired', pts: 4 },
+          { label: 'I was demoted', pts: 3 },
+          { label: 'Something else changed for the worse', pts: 2 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'r_timing',
+        title: 'How soon after you reported it did that happen?',
+        sub: 'Timing is one of the strongest signals in a retaliation claim.',
+        multi: false,
+        options: [
+          { label: 'Within a week', pts: 4 },
+          { label: 'Within a month', pts: 3 },
+          { label: 'Within a few months', pts: 2 },
+          { label: 'Longer than that', pts: 1 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'r_comparator',
+        title: "Were coworkers who didn't report anything treated better?",
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Yes, clearly', pts: 4 },
+          { label: 'I think so', pts: 2 },
+          { label: 'No', pts: 0 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'r_explanation',
+        title: 'Did the employer explain the decision?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'No explanation was given', pts: 4 },
+          { label: 'They gave a reason, but it didn\u2019t add up', pts: 4 },
+          { label: 'The reason seemed reasonable', pts: 1 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+    ],
+  },
+
+  harassment: {
+    label: 'Harassment',
+    questions: [
+      {
+        id: 'h_type',
+        title: 'What kind of harassment was it?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Sexual harassment', pts: 4 },
+          { label: 'Harassment based on race, age, disability, or another protected trait', pts: 4 },
+          { label: 'Not sure how to categorize it', pts: 2, notSure: true },
+        ],
+      },
+      {
+        id: 'h_severity',
+        title: 'How would you describe it?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'One severe incident', pts: 3 },
+          { label: 'A pattern over several weeks', pts: 3 },
+          { label: 'A pattern over months or longer', pts: 4 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'h_harasser',
+        title: 'Who was responsible?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'My supervisor or manager', pts: 4 },
+          { label: 'A coworker', pts: 2 },
+          { label: 'Both', pts: 4 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+      {
+        id: 'h_jobImpact',
+        title: 'Did anything happen to your job because of it?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'I was fired', pts: 4 },
+          { label: 'I was demoted', pts: 3 },
+          { label: 'I quit because of it', pts: 3 },
+          { label: "No, I'm still there", pts: 1 },
+        ],
+      },
+      {
+        id: 'h_workImpact',
+        title: 'Did it affect your ability to do your job?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Yes, significantly', pts: 4 },
+          { label: 'Somewhat', pts: 2 },
+          { label: 'Not really', pts: 0 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+    ],
+  },
+};
+
+const CATEGORY_ORDER = ['discrimination', 'retaliation', 'harassment'];
+
+// Tag every question with a `section` label. This is what
+// renders as the eyebrow above each question — it's the fix for
+// tracks blurring together when someone selects more than one
+// category: each screen now clearly says "Discrimination",
+// "Retaliation", etc., not just "Step 4 of 12".
+Q_REPRESENTED.section = 'Eligibility';
+Q_SOL.section = 'Eligibility';
+Q_FEHA.section = 'Eligibility';
+SHARED_QUESTIONS.forEach(q => q.section = 'Background');
+Object.keys(TRACKS).forEach(key => {
+  TRACKS[key].questions.forEach(q => q.section = TRACKS[key].label);
+});
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  screen: 'category',
+  categories: [],          // selected category keys
+  activeCategories: [],    // categories still "in play" after FEHA gate narrows them
+  answers: {},             // questionId -> option object chosen
+  notSureCount: 0,
+  steps: [],               // ordered list of question ids for the answering phase
+  stepIndex: 0,
+  hardstopReason: null,
+  contact: { name: '', email: '', phone: '' },
+  freeText: '',
+};
+
+function resetState(){
+  state = {
+    screen: 'category',
+    categories: [],
+    activeCategories: [],
+    answers: {},
+    notSureCount: 0,
+    steps: [],
+    stepIndex: 0,
+    hardstopReason: null,
+    contact: { name: '', email: '', phone: '' },
+    freeText: '',
+  };
+  render();
+}
+
+/* ============================================================
+   FLOW LOGIC
+   ============================================================ */
+
+// Build the ordered list of question objects for the current
+// person's path once categories are locked in.
+function buildSteps(){
+  const steps = [Q_REPRESENTED, Q_SOL];
+
+  const needsFeha = state.categories.includes('discrimination') || state.categories.includes('retaliation');
+  if (needsFeha) steps.push(Q_FEHA);
+
+  steps.push(...SHARED_QUESTIONS);
+
+  CATEGORY_ORDER.forEach(cat => {
+    if (state.categories.includes(cat)) {
+      steps.push(...TRACKS[cat].questions);
+    }
+  });
+
+  return steps;
+}
+
+function currentQuestion(){
+  return state.steps[state.stepIndex];
+}
+
+function selectOption(question, option){
+  if (question.multi) return; // handled separately for category picker
+
+  state.answers[question.id] = option;
+  if (option.notSure) state.notSureCount++;
+
+  // Hard stops -----------------------------------------------
+  if (option.hardstop === 'represented' || option.hardstop === 'sol') {
+    state.hardstopReason = option.hardstop;
+    state.screen = 'stop';
+    render();
+    return;
+  }
+
+  if (option.hardstop === 'feha') {
+    // Discrimination/retaliation drop out, but harassment (no
+    // employee-count minimum under FEHA) can still proceed.
+    state.activeCategories = state.categories.filter(c => c === 'harassment');
+    if (state.activeCategories.length === 0) {
+      state.hardstopReason = 'feha';
+      state.screen = 'stop';
+      render();
+      return;
+    } else {
+      // Rebuild remaining steps around harassment-only track.
+      const remainingIndex = state.stepIndex + 1;
+      const alreadyAsked = state.steps.slice(0, remainingIndex);
+      const rebuilt = [...SHARED_QUESTIONS, ...TRACKS.harassment.questions];
+      state.steps = [...alreadyAsked, ...rebuilt];
+    }
+  }
+
+  advance();
+}
+
+function advance(){
+  if (state.stepIndex < state.steps.length - 1) {
+    state.stepIndex++;
+    render();
+  } else {
+    computeResult();
+  }
+}
+
+function goBack(){
+  if (state.stepIndex > 0) {
+    state.stepIndex--;
+    render();
+  } else {
+    state.screen = 'category';
+    render();
+  }
+}
+
+function computeResult(){
+  let score = 0, max = 0;
+  state.steps.forEach(q => {
+    const chosen = state.answers[q.id];
+    const best = Math.max(...q.options.map(o => o.pts));
+    max += best;
+    if (chosen) score += chosen.pts;
+  });
+  const pct = max > 0 ? score / max : 0;
+
+  // >>> TUNABLE, PLACEHOLDER <<<
+  // A flat linear mapping (pct * 9) put too many ordinary answer
+  // combinations into the top tiers, since most options carry a
+  // moderately high point value. Applying an exponent > 1 curves
+  // the mapping down: it now takes a genuinely strong combination
+  // of answers to reach the highest tiers, while typical/mixed
+  // answers land in the lower-to-middle range — closer to how
+  // real case outcomes are distributed. Raise SKEW further to
+  // push estimates lower on average; lower it toward 1 to make
+  // the mapping linear again.
+  const SKEW = 1.6;
+  const skewedPct = Math.pow(pct, SKEW);
+  const tierIndex = Math.min(TIERS.length - 1, Math.floor(skewedPct * TIERS.length));
+  state.tierIndex = tierIndex;
+  state.screen = 'reveal';
+  render();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function el(html){
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+
+// For screens built as one template string with multiple
+// sibling top-level elements (header + content + footer). Using
+// el() + appendChild for these would silently drop every node
+// after the first, since Node.appendChild only takes one node.
+function appendAll(container, html){
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  container.append(...t.content.childNodes);
+}
+
+function progressBar(){
+  if (!state.steps.length) return '';
+  const total = state.steps.length;
+  let ticks = '';
+  for (let i = 0; i < total; i++){
+    const cls = i < state.stepIndex ? 'done' : (i === state.stepIndex ? 'current' : '');
+    ticks += `<span class="${cls}"></span>`;
+  }
+  return `
+    <div class="progress-rules">${ticks}</div>
+    <div class="step-label">Step ${state.stepIndex + 1} of ${total}</div>
+  `;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  if (state.screen === 'category') return renderCategory(app);
+  if (state.screen === 'question') return renderQuestion(app);
+  if (state.screen === 'stop') return renderStop(app);
+  if (state.screen === 'reveal') return renderReveal(app);
+  if (state.screen === 'thankyou') return renderThankYou(app);
+}
+
+function renderCategory(app){
+  const header = el(`
+    <div class="header">
+      <div class="brand"><span class="mark">§</span> The Case Calculator</div>
+      <div class="readout" id="readout" style="font-size:24px; margin:16px 0 4px 0;">
+        <span class="digit">$</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span><span class="digit">,</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span>
+      </div>
+      <div class="readout-label" style="margin-bottom:6px;">Your estimate appears here when you're done</div>
+    </div>
+  `);
+  app.appendChild(header);
+
+  const content = el(`
+    <div class="content">
+      <div class="eyebrow">Step 1 · California</div>
+      <h1 class="q">What happened to you?</h1>
+      <p class="sub">Select everything that applies — many situations involve more than one. Free, with no obligation.</p>
+      <div class="options" id="cat-options"></div>
+    </div>
+  `);
+  app.appendChild(content);
+
+  const optWrap = content.querySelector('#cat-options');
+  const labels = { discrimination: 'Discrimination', retaliation: 'Retaliation', harassment: 'Harassment' };
+  const subs = {
+    discrimination: 'Treated worse because of a protected trait',
+    retaliation: 'Punished after reporting or opposing something',
+    harassment: 'Subjected to unwelcome, hostile conduct',
+  };
+  CATEGORY_ORDER.forEach(cat => {
+    const selected = state.categories.includes(cat);
+    const btn = el(`
+      <button class="opt multi ${selected ? 'selected' : ''}" data-cat="${cat}">
+        <span>${labels[cat]}<br><span class="sub-note">${subs[cat]}</span></span>
+        <span class="check"></span>
+      </button>
+    `);
+    btn.onclick = () => {
+      const idx = state.categories.indexOf(cat);
+      if (idx > -1) state.categories.splice(idx, 1); else state.categories.push(cat);
+      render();
+    };
+    optWrap.appendChild(btn);
+  });
+
+  wireFooterCategory();
+
+  // Ledger-tape tick animation: digits cycle briefly then settle
+  // to dashes, signaling "this is a calculator" on load. Only
+  // runs once per app load, not on every re-render from a tap.
+  if (!window.__readoutTicked){
+    window.__readoutTicked = true;
+    const digitEls = app.querySelectorAll('#readout .digit');
+    const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    digitEls.forEach((d, i) => {
+      if (d.textContent === '$' || d.textContent === ',') return;
+      if (reduceMotion){ d.textContent = '—'; return; }
+      let ticks = 0;
+      const maxTicks = 6 + i;
+      const iv = setInterval(() => {
+        d.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+        ticks++;
+        if (ticks >= maxTicks){
+          clearInterval(iv);
+          d.textContent = '—';
+          d.classList.add('tick');
+        }
+      }, 55);
+    });
+  }
+
+  function wireFooterCategory(){
+    const old = app.querySelector('.footer');
+    if (old) old.remove();
+    const footer = el(`
+      <div class="footer">
+        <button class="btn btn-primary" id="cat-continue" ${state.categories.length ? '' : 'disabled'}>Continue</button>
+        <p class="consent" style="text-align:center;">By continuing you agree to our <a href="#" style="color:inherit;">Privacy Policy</a>. This tool provides general information only and is not legal advice.</p>
+      </div>
+    `);
+    app.appendChild(footer);
+    document.getElementById('cat-continue').onclick = () => {
+      if (!state.categories.length) return;
+      state.activeCategories = [...state.categories];
+      state.steps = buildSteps();
+      state.stepIndex = 0;
+      state.screen = 'question';
+      render();
+    };
+  }
+}
+
+function renderQuestion(app){
+  const q = currentQuestion();
+  const header = el(`
+    <div class="header">
+      <div class="brand"><span class="mark">§</span> Case Calculator</div>
+      ${progressBar()}
+    </div>
+  `);
+  app.appendChild(header);
+
+  const content = el(`
+    <div class="content">
+      <div class="eyebrow">${q.section}</div>
+      <h1 class="q">${q.title}</h1>
+      ${q.sub ? `<p class="sub">${q.sub}</p>` : '<div style="height:26px;"></div>'}
+      <div class="options" id="q-options"></div>
+    </div>
+  `);
+  app.appendChild(content);
+
+  const optWrap = content.querySelector('#q-options');
+  q.options.forEach(opt => {
+    const b = el(`
+      <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
+        <span>${opt.label}</span>
+        <span class="check"></span>
+      </button>
+    `);
+    b.onclick = () => selectOption(q, opt);
+    optWrap.appendChild(b);
+  });
+
+  const footer = el(`
+    <div class="footer">
+      <button class="back-link" id="back">&larr; Back</button>
+    </div>
+  `);
+  app.appendChild(footer);
+  document.getElementById('back').onclick = goBack;
+}
+
+function renderStop(app){
+  const copy = {
+    represented: {
+      h: 'Looks like you\u2019re already represented',
+      p: 'Since you\u2019re already working with a lawyer on this matter, we\u2019re not able to take this further — your existing attorney is the right person to advise you.',
+    },
+    sol: {
+      h: 'This may be outside the filing window',
+      p: 'California generally requires employment claims like this to be filed within 3 years. Based on your answer, this situation may fall outside that window — but exceptions exist, so it\u2019s still worth a quick call with an attorney to confirm.',
+    },
+    feha: {
+      h: 'This likely doesn\u2019t meet the minimum company size',
+      p: 'California\u2019s discrimination and retaliation protections generally apply to employers with 5 or more employees. Based on your answer, this may not qualify — though other legal theories can sometimes still apply.',
+    },
+  };
+  const c = copy[state.hardstopReason] || copy.represented;
+  appendAll(app, `
+    <div class="content stop">
+      <div class="seal">§</div>
+      <h1>${c.h}</h1>
+      <p>${c.p}</p>
+    </div>
+    <div class="footer">
+      <button class="btn btn-ghost" id="restart">Start over</button>
+    </div>
+  `);
+  document.getElementById('restart').onclick = resetState;
+}
+
+function renderReveal(app){
+  const tier = TIERS[state.tierIndex];
+  const target = tierDisplayValue(tier);
+  appendAll(app, `
+    <div class="header"><div class="brand"><span class="mark">§</span> Case Calculator</div></div>
+    <div class="content reveal" style="text-align:left; padding-bottom:24px;">
+      <div class="eyebrow" style="text-align:left;">Your estimate</div>
+      <div class="readout" id="reveal-readout" style="font-size:44px; margin:8px 0 4px 0;"></div>
+      <div class="readout-label" style="margin-bottom:22px;">${tier.label} · based on what you\u2019ve shared</div>
+
+      <div class="eyebrow" style="margin-top:10px; text-align:center;">Have a lawyer call you</div>
+      <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
+      <p class="sub" style="margin-bottom:20px; text-align:center;">Free, with no obligation. A lawyer will call you within a business day.</p>
+      <div class="field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" type="text" placeholder="Jane Rivera" value="${state.contact.name}">
+      </div>
+      <div class="field">
+        <label for="f-phone">Phone number</label>
+        <input id="f-phone" type="tel" placeholder="(555) 555-5555" value="${state.contact.phone}">
+      </div>
+      <div class="field">
+        <label for="f-email">Email address</label>
+        <input id="f-email" type="email" placeholder="jane@email.com" value="${state.contact.email}">
+      </div>
+      <div class="field">
+        <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
+        <textarea id="f-freetext" placeholder="Dates, names, or details in your own words — this doesn't change your estimate, it just helps the call go faster.">${state.freeText}</textarea>
+      </div>
+      <p class="consent">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
+    </div>
+    <div class="footer">
+      <button class="btn btn-primary" id="contact-submit">Submit</button>
+      <div class="disclaimer" style="text-align:left; margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
+        This estimate is general and educational — it\u2019s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually be worth.
+      </div>
+    </div>
+  `);
+  const submitBtn = document.getElementById('contact-submit');
+  submitBtn.onclick = async () => {
+    state.contact.name = document.getElementById('f-name').value;
+    state.contact.phone = document.getElementById('f-phone').value;
+    state.contact.email = document.getElementById('f-email').value;
+    state.freeText = document.getElementById('f-freetext').value;
+
+    // Basic front-end validation — at least a name and one way
+    // to reach them before we let the submission go through.
+    if (!state.contact.name.trim() || (!state.contact.phone.trim() && !state.contact.email.trim())) {
+      submitBtn.textContent = 'Please add your name and phone or email';
+      setTimeout(() => { submitBtn.textContent = 'Submit'; }, 2200);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    // Build the full, readable case record the backend emails
+    // out — one row per question actually asked on this
+    // person's path, grouped by the same section labels shown
+    // on-screen (Eligibility, Background, then each track).
+    const answers = state.steps.map(q => {
+      const chosen = state.answers[q.id];
+      return {
+        section: q.section,
+        title: q.title,
+        answer: chosen ? chosen.label : 'Not answered',
+      };
+    });
+
+    const payload = {
+      name: state.contact.name,
+      phone: state.contact.phone,
+      email: state.contact.email,
+      categories: state.categories.map(c => TRACKS[c] ? TRACKS[c].label : c),
+      tierLabel: TIERS[state.tierIndex].label,
+      estimateDisplay: tierDisplayValue(TIERS[state.tierIndex]),
+      freeText: state.freeText,
+      answers,
+    };
+
+    try {
+      await fetch('/api/submit-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      // Network hiccup or the endpoint isn't deployed yet (e.g.
+      // testing this file locally without Vercel running). The
+      // visitor's experience should never break over this — log
+      // it and continue to the thank-you screen regardless.
+      console.error('Lead submission failed to send:', err);
+    }
+
+    state.screen = 'thankyou';
+    render();
+  };
+
+  // Ledger-tape tick animation: digits cycle briefly then settle
+  // on the actual estimate, echoing the same mechanism shown as
+  // dashes on the opening screen.
+  const readoutEl = document.getElementById('reveal-readout');
+  const chars = target.split('');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
+  chars.forEach((ch, i) => {
+    const span = document.createElement('span');
+    span.className = 'digit';
+    readoutEl.appendChild(span);
+    if (!/[0-9]/.test(ch) || reduceMotion){
+      span.textContent = ch;
+      return;
+    }
+    let ticks = 0;
+    const maxTicks = 6 + i;
+    const iv = setInterval(() => {
+      span.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+      ticks++;
+      if (ticks >= maxTicks){
+        clearInterval(iv);
+        span.textContent = ch;
+        span.classList.add('tick');
+      }
+    }, 55);
+  });
+}
+
+function renderThankYou(app){
+  appendAll(app, `
+    <div class="content thankyou">
+      <div class="seal" style="margin:0 auto 26px auto;">✓</div>
+      <h1 style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:26px; margin:0 0 14px 0;">You're all set</h1>
+      <p style="font-size:14.5px; line-height:1.6; color:var(--ink-soft);">An employment attorney will call you within one business day. In the meantime, keep any documents, emails, or messages related to your situation somewhere safe.</p>
+    </div>
+    <div class="footer">
+      <button class="btn btn-ghost" id="restart2">Start a new case check</button>
+    </div>
+  `);
+  document.getElementById('restart2').onclick = resetState;
+}
+
+render();
+</script>
+</body>
+</html>
