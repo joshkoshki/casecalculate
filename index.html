@@ -853,6 +853,9 @@ let state = {
   hardstopReason: null,
   contact: { name: '', email: '', phone: '' },
   freeText: '',
+  startTime: Date.now(),   // when this session began — sent with the
+                            // submission so the backend can flag
+                            // implausibly fast bot submissions.
 };
 
 function resetState(){
@@ -867,6 +870,7 @@ function resetState(){
     hardstopReason: null,
     contact: { name: '', email: '', phone: '' },
     freeText: '',
+    startTime: Date.now(),
   };
   render();
 }
@@ -1216,6 +1220,18 @@ function renderReveal(app){
         <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
         <textarea id="f-freetext" placeholder="Dates, names, or details in your own words — this doesn't change your estimate, it just helps the call go faster.">${state.freeText}</textarea>
       </div>
+      <!-- Honeypot field: invisible to real people (off-screen,
+           not display:none, since some bots specifically skip
+           display:none fields). Real users never see or fill
+           this. Any bot that auto-fills every input on the page
+           will fill it, and the backend silently discards
+           submissions where it's non-empty. tabindex="-1" and
+           autocomplete="off" keep it out of keyboard tab order
+           and browser autofill. -->
+      <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+        <label for="f-website">Website</label>
+        <input id="f-website" type="text" name="website" tabindex="-1" autocomplete="off">
+      </div>
       <p class="consent">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
     </div>
     <div class="footer">
@@ -1265,6 +1281,10 @@ function renderReveal(app){
       estimateDisplay: tierDisplayValue(TIERS[state.tierIndex]),
       freeText: state.freeText,
       answers,
+      // Bot-detection signals — not shown in the email, checked
+      // server-side in api/submit-lead.js before sending anything.
+      website: document.getElementById('f-website').value, // honeypot — should always be empty
+      elapsedMs: Date.now() - state.startTime,              // time from load to submit
     };
 
     try {

@@ -102,6 +102,29 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // ---- Bot detection ------------------------------------------
+  // Both checks fail silently: respond with a normal success so
+  // a bot gets no signal that it was caught, but skip sending
+  // the email entirely. Log server-side (visible in Vercel's
+  // Logs tab) so real bot traffic is visible without cluttering
+  // the inbox.
+  if (lead.website && String(lead.website).trim() !== '') {
+    console.warn('submit-lead: blocked — honeypot field was filled', { name: lead.name });
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // A real person can't read every question, tap through 15+
+  // screens, and fill out a contact form in under ~8 seconds.
+  // Adjust this threshold if it ever produces false positives
+  // for genuinely fast real users.
+  const MIN_PLAUSIBLE_MS = 8000;
+  if (typeof lead.elapsedMs === 'number' && lead.elapsedMs < MIN_PLAUSIBLE_MS) {
+    console.warn('submit-lead: blocked — submitted implausibly fast', { name: lead.name, elapsedMs: lead.elapsedMs });
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   const toAddress = process.env.LEAD_EMAIL_TO;
   const fromAddress = process.env.RESEND_FROM || 'Case Calculator <onboarding@resend.dev>';
