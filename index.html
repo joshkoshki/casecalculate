@@ -1196,7 +1196,7 @@ function renderReveal(app){
   const target = tierDisplayValue(tier);
   appendAll(app, `
     <div class="header"><div class="brand"><span class="mark">§</span> Case Calculator</div></div>
-    <div class="content reveal" id="reveal-content" style="text-align:left;">
+    <div class="content reveal" style="text-align:left; padding-bottom:24px;">
       <div class="eyebrow" style="text-align:left;">Your estimate</div>
       <div class="readout" id="reveal-readout" style="font-size:44px; margin:8px 0 4px 0;"></div>
       <div class="readout-label" style="margin-bottom:22px;">${tier.label} · based on what you\u2019ve shared</div>
@@ -1234,32 +1234,13 @@ function renderReveal(app){
       </div>
       <p class="consent">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
     </div>
-    <div class="footer">
+    <div class="footer" style="position:static; background:none;">
       <button class="btn btn-primary" id="contact-submit">Submit</button>
       <div class="disclaimer" style="text-align:left; margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
         This estimate is general and educational — it\u2019s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually be worth.
       </div>
     </div>
   `);
-
-  // The footer is sticky and pinned to the bottom of the viewport
-  // for the whole scroll, not just at the true end of the page —
-  // so its actual rendered height (which varies with how many
-  // lines the disclaimer wraps to on a given screen width) has to
-  // be reserved as bottom padding on the content, or the footer
-  // permanently overlaps whatever form field happens to scroll
-  // into that bottom band. Measuring it directly avoids guessing
-  // a fixed pixel value that breaks on narrower screens.
-  const revealContent = document.getElementById('reveal-content');
-  const revealFooter = app.querySelector('.footer');
-  function syncFooterClearance(){
-    revealContent.style.paddingBottom = (revealFooter.offsetHeight + 24) + 'px';
-  }
-  syncFooterClearance();
-  window.addEventListener('resize', function onResize(){
-    if (!document.body.contains(revealFooter)) { window.removeEventListener('resize', onResize); return; }
-    syncFooterClearance();
-  });
 
   const submitBtn = document.getElementById('contact-submit');
   submitBtn.onclick = async () => {
