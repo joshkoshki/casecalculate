@@ -20,6 +20,8 @@
 //                       for a more branded "from" address.
 // ============================================================
 
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+
 function escapeHtml(str) {
   if (str == null) return '';
   return String(str)
@@ -28,10 +30,162 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
+// ============================================================
+// PDF generation — matches the branded lead document style
+// (warm vellum accents, oxblood + gold), attached to every lead
+// email alongside the HTML body. Pure JS via pdf-lib, no native
+// dependencies, so it runs cleanly in Vercel's serverless
+// environment with nothing extra to configure.
+// ============================================================
+const COLOR = {
+  oxblood: rgb(0x6e / 255, 0x23 / 255, 0x32 / 255),
+  gold: rgb(0x92 / 255, 0x79 / 255, 0x3c / 255),
+  ink: rgb(0x21 / 255, 0x1d / 255, 0x17 / 255),
+  inkSoft: rgb(0x5b / 255, 0x56 / 255, 0x48 / 255),
+  line: rgb(0xe6 / 255, 0xe0 / 255, 0xd2 / 255),
+  bg: rgb(0xf6 / 255, 0xf1 / 255, 0xe6 / 255),
+};
+
+function wrapText(text, font, size, maxWidth) {
+  const words = String(text).split(' ');
+  const lines = [];
+  let current = '';
+  for (const w of words) {
+    const trial = (current + ' ' + w).trim();
+    if (font.widthOfTextAtSize(trial, size) <= maxWidth) {
+      current = trial;
+    } else {
+      if (current) lines.push(current);
+      current = w;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+async function buildLeadPdf(lead) {
+  const pdfDoc = await PDFDocument.create();
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const PAGE_W = 612, PAGE_H = 792;
+  const margin = 61;
+  const contentW = PAGE_W - margin * 2;
+
+  let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  let y = PAGE_H - margin;
+
+  function newPage() {
+    page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+    y = PAGE_H - margin;
+  }
+
+  function ensureSpace(needed) {
+    if (y - needed < margin) newPage();
+  }
+
+  function text(str, x, size, font, color, yOverride) {
+    page.drawText(str, { x, y: yOverride !== undefined ? yOverride : y, size, font, color });
+  }
+
+  function hr(color = COLOR.line, width = 0.5) {
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: margin + contentW, y },
+      thickness: width,
+      color,
+    });
+  }
+
+  // ---- Header ----
+  text('N E W   L E A D', margin, 9, fontBold, COLOR.gold);
+  y -= 26;
+  text(lead.name || 'No name provided', margin, 24, fontBold, COLOR.ink);
+  y -= 22;
+  text((lead.categories || []).join(', '), margin, 12, fontRegular, COLOR.inkSoft);
+  y -= 30;
+
+  // ---- Contact block ----
+  const rowH = 24;
+  page.drawRectangle({ x: margin, y: y - rowH, width: contentW, height: rowH, color: COLOR.bg });
+  text('PHONE', margin + 10, 8, fontBold, COLOR.gold, y - 15);
+  text(lead.phone || 'Not provided', margin + 100, 11, fontRegular, COLOR.ink, y - 16);
+  y -= rowH;
+  hr();
+  text('EMAIL', margin + 10, 8, fontBold, COLOR.gold, y - 15);
+  text(lead.email || 'Not provided', margin + 100, 11, fontRegular, COLOR.ink, y - 16);
+  y -= rowH;
+  page.drawRectangle({
+    x: margin, y, width: contentW, height: rowH * 2,
+    borderColor: COLOR.ink, borderWidth: 1,
+  });
+  y -= 30;
+
+  // ---- Free text, if provided ----
+  if (lead.freeText && lead.freeText.trim()) {
+    const labelY = y;
+    text('IN THEIR OWN WORDS', margin + 12, 8, fontBold, COLOR.gold);
+    y -= 16;
+    const lines = wrapText(lead.freeText, fontRegular, 11, contentW - 24);
+    const blockTop = labelY + 10;
+    lines.forEach(line => {
+      ensureSpace(16);
+      text(line, margin + 12, 11, fontRegular, COLOR.ink);
+      y -= 15;
+    });
+    const blockBottom = y - 6;
+    page.drawRectangle({
+      x: margin, y: blockBottom, width: 3, height: blockTop - blockBottom,
+      color: COLOR.gold,
+    });
+    y -= 20;
+  }
+
+  // ---- Full case detail ----
+  ensureSpace(40);
+  text('F U L L   C A S E   D E T A I L', margin, 11, fontBold, COLOR.ink);
+  y -= 6;
+  hr(COLOR.ink, 1);
+  y -= 22;
+
+  let lastSection = null;
+  for (const a of lead.answers || []) {
+    ensureSpace(70);
+
+    if (a.section !== lastSection) {
+      ensureSpace(30);
+      text(a.section, margin, 9, fontBold, COLOR.gold);
+      y -= 18;
+      lastSection = a.section;
+    }
+
+    const qLines = wrapText(a.title, fontBold, 11, contentW);
+    qLines.forEach(line => {
+      ensureSpace(15);
+      text(line, margin, 11, fontBold, COLOR.ink);
+      y -= 15;
+    });
+
+    const ansLines = wrapText(a.answer, fontRegular, 11, contentW);
+    ansLines.forEach(line => {
+      ensureSpace(15);
+      text(line, margin, 11, fontRegular, COLOR.inkSoft);
+      y -= 15;
+    });
+
+    y -= 6;
+    hr();
+    y -= 18;
+  }
+
+  const bytes = await pdfDoc.save();
+  return Buffer.from(bytes).toString('base64');
+}
+
 function buildEmailHtml(lead) {
   const {
     name, phone, email,
-    categories, tierLabel, estimateDisplay,
+    categories,
     freeText, answers, // answers is an ordered array of {section, title, answer}
   } = lead;
 
@@ -50,7 +204,7 @@ function buildEmailHtml(lead) {
     <div style="background:#6E2332; color:#F6F1E6; padding:20px 24px; border-radius:4px 4px 0 0;">
       <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.8;">New Lead</div>
       <div style="font-size:22px; font-weight:700; margin-top:4px;">${escapeHtml(name || 'No name provided')}</div>
-      <div style="font-size:14px; margin-top:6px; opacity:0.9;">${escapeHtml((categories || []).join(', '))} &middot; ${escapeHtml(tierLabel)} (${escapeHtml(estimateDisplay)})</div>
+      <div style="font-size:14px; margin-top:6px; opacity:0.9;">${escapeHtml((categories || []).join(', '))}</div>
     </div>
 
     <div style="padding:20px 24px; border:1px solid #e6e0d2; border-top:none;">
@@ -138,7 +292,22 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const subject = `New Lead: ${lead.name || 'Unknown'} — ${(lead.categories || []).join(', ')} — ${lead.tierLabel || ''}`;
+  const subject = `New Lead: ${lead.name || 'Unknown'} — ${(lead.categories || []).join(', ')}`;
+
+  // Build the attached PDF. Isolated in its own try/catch so a
+  // PDF generation failure never blocks the email itself from
+  // sending — the email body has the full details either way.
+  let pdfAttachment = null;
+  try {
+    const pdfBase64 = await buildLeadPdf(lead);
+    const safeName = (lead.name || 'lead').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    pdfAttachment = {
+      filename: `lead-${safeName}.pdf`,
+      content: pdfBase64,
+    };
+  } catch (err) {
+    console.error('submit-lead: PDF generation failed, sending email without attachment', err);
+  }
 
   try {
     const emailRes = await fetch('https://api.resend.com/emails', {
@@ -152,6 +321,7 @@ module.exports = async (req, res) => {
         to: [toAddress],
         subject,
         html: buildEmailHtml(lead),
+        attachments: pdfAttachment ? [pdfAttachment] : undefined,
       }),
     });
 
