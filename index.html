@@ -1196,10 +1196,10 @@ function renderReveal(app){
   const target = tierDisplayValue(tier);
   appendAll(app, `
     <div class="header"><div class="brand"><span class="mark">§</span> Case Calculator</div></div>
-    <div class="content reveal" style="text-align:left; padding-bottom:24px;">
+    <div class="content reveal" style="text-align:left; padding-top:18px; padding-bottom:4px;">
       <div class="eyebrow" style="text-align:left;">Your estimate</div>
-      <div class="readout" id="reveal-readout" style="font-size:44px; margin:8px 0 4px 0;"></div>
-      <div class="readout-label" style="margin-bottom:22px;">${tier.label} · based on what you\u2019ve shared</div>
+      <div class="readout" id="reveal-readout" style="font-size:44px; margin:4px 0 2px 0;"></div>
+      <div class="readout-label" style="margin-bottom:14px;">${tier.label} · based on what you\u2019ve shared</div>
 
       <div class="eyebrow" style="margin-top:10px; text-align:center;">Have a lawyer call you</div>
       <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
@@ -1234,7 +1234,7 @@ function renderReveal(app){
       </div>
       <p class="consent">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
     </div>
-    <div class="footer" style="position:static; background:none;">
+    <div class="footer" style="position:static; background:none; padding-top:8px;">
       <button class="btn btn-primary" id="contact-submit">Submit</button>
       <div class="disclaimer" style="text-align:left; margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
         This estimate is general and educational — it\u2019s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually be worth.
