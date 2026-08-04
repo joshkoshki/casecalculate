@@ -9,17 +9,28 @@
 // Required environment variables (set these in Vercel's
 // project settings, NOT in this file, NOT in source control):
 //
-//   RESEND_API_KEY   — your Resend API key (starts with re_)
-//   LEAD_EMAIL_TO    — the email address leads should be sent to
-//   RESEND_FROM      — optional. Defaults to Resend's shared
-//                       test sender (onboarding@resend.dev),
-//                       which works immediately with zero setup.
-//                       Once you verify your own domain in
-//                       Resend, set this to something like
-//                       "Case Calculator <leads@yourdomain.com>"
-//                       for a more branded "from" address.
+//   RESEND_API_KEY        — your Resend API key (starts with re_)
+//   LEAD_EMAIL_TO         — the email address leads should be sent to
+//   RESEND_FROM           — optional. Defaults to Resend's shared
+//                            test sender (onboarding@resend.dev),
+//                            which works immediately with zero setup.
+//                            Once you verify your own domain in
+//                            Resend, set this to something like
+//                            "Case Calculator <leads@yourdomain.com>"
+//                            for a more branded "from" address.
+//
+//   META_PIXEL_ID          — the Pixel/dataset ID from Meta Events
+//                            Manager (the same ID used in index.html's
+//                            fbq('init', ...) call).
+//   META_CAPI_ACCESS_TOKEN — a System User access token generated in
+//                            Meta Events Manager > Settings >
+//                            Conversions API > "Generate access token".
+//                            This is what authenticates server-side
+//                            events — without it, CAPI silently does
+//                            nothing (see sendMetaCapiEvent below).
 // ============================================================
 
+const crypto = require('crypto');
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
 function escapeHtml(str) {
@@ -28,6 +39,80 @@ function escapeHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+// ============================================================
+// Meta Conversions API (server-side event forwarding)
+// ------------------------------------------------------------
+// Meta requires personal data (email, phone) to be hashed with
+// SHA-256 before it's sent — never send raw PII to their API.
+// Lowercasing and trimming first is also required, since Meta
+// hashes the same way on their matching side and the hashes
+// need to line up.
+// ============================================================
+function hashForMeta(value) {
+  if (!value) return undefined;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return undefined;
+  return crypto.createHash('sha256').update(normalized).digest('hex');
+}
+
+function normalizePhoneForMeta(phone) {
+  if (!phone) return undefined;
+  // Meta expects digits only, no punctuation, ideally with
+  // country code. We don't know for certain every lead includes
+  // a country code, so this is a best-effort normalization, not
+  // a guarantee of perfect match quality.
+  const digits = String(phone).replace(/[^0-9]/g, '');
+  return digits || undefined;
+}
+
+async function sendMetaCapiEvent(lead) {
+  const pixelId = process.env.META_PIXEL_ID;
+  const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
+
+  if (!pixelId || !accessToken) {
+    // Not configured — log clearly so this shows up in Vercel's
+    // Logs tab instead of failing silently forever.
+    console.warn('submit-lead: CAPI skipped — missing META_PIXEL_ID or META_CAPI_ACCESS_TOKEN');
+    return;
+  }
+
+  const userData = {
+    em: [hashForMeta(lead.email)].filter(Boolean),
+    ph: [hashForMeta(normalizePhoneForMeta(lead.phone))].filter(Boolean),
+  };
+
+  const eventPayload = {
+    data: [
+      {
+        event_name: 'Lead',
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: lead.eventId, // must match the browser pixel's eventID for dedup
+        action_source: 'website',
+        event_source_url: lead.eventSourceUrl || undefined,
+        user_data: userData,
+      },
+    ],
+  };
+
+  const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`;
+
+  try {
+    const capiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventPayload),
+    });
+    const capiBody = await capiRes.json().catch(() => ({}));
+    if (!capiRes.ok) {
+      console.error('submit-lead: Meta CAPI error', capiRes.status, capiBody);
+    } else {
+      console.log('submit-lead: Meta CAPI event sent', { eventId: lead.eventId, response: capiBody });
+    }
+  } catch (err) {
+    console.error('submit-lead: Meta CAPI request failed', err);
+  }
 }
 
 // ============================================================
@@ -278,6 +363,14 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true });
     return;
   }
+
+  // ---- Meta Conversions API (server-side) ----------------------
+  // Fired here, independent of the email logic below, so CAPI
+  // still works even if Resend isn't configured. Uses the
+  // eventId the browser also sends with its own fbq('track',
+  // 'Lead', ...) call, so Meta deduplicates the two into one
+  // real conversion instead of double-counting.
+  await sendMetaCapiEvent(lead);
 
   const apiKey = process.env.RESEND_API_KEY;
   const toAddress = process.env.LEAD_EMAIL_TO;

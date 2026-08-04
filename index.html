@@ -1273,6 +1273,13 @@ function renderReveal(app){
       };
     });
 
+    // Shared event ID — sent with BOTH the browser pixel event
+    // (fbq below) and the server-side Conversions API event
+    // (fired from api/submit-lead.js). Meta uses this to
+    // deduplicate the two, so the same real Lead doesn't get
+    // double-counted just because both channels reported it.
+    const eventId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('lead_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+
     const payload = {
       name: state.contact.name,
       phone: state.contact.phone,
@@ -1286,6 +1293,9 @@ function renderReveal(app){
       // server-side in api/submit-lead.js before sending anything.
       website: document.getElementById('f-website').value, // honeypot — should always be empty
       elapsedMs: Date.now() - state.startTime,              // time from load to submit
+      // Meta Conversions API deduplication + event context.
+      eventId,
+      eventSourceUrl: window.location.href,
     };
 
     try {
@@ -1306,9 +1316,12 @@ function renderReveal(app){
     // the flow, so Meta only counts someone as a "Lead" once
     // they've actually completed the form and hit Submit, not
     // just started the calculator. This is what the Facebook
-    // Ads conversion event should be pointed at.
+    // Ads conversion event should be pointed at. The eventID
+    // option is what enables deduplication against the
+    // server-side Conversions API event fired for the same
+    // submission in api/submit-lead.js.
     if (typeof fbq === 'function') {
-      fbq('track', 'Lead');
+      fbq('track', 'Lead', {}, { eventID: eventId });
     }
 
     state.screen = 'thankyou';
