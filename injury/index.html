@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Injury Case Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   PI SITE — DESIGN TOKENS
+   Same editorial system as the employment calculator (Fraunces
+   serif, warm vellum paper, ledger/legal-document motif). Only
+   the accent colors change: oxblood+gold -> deep navy + muted
+   silver, for a more "trustworthy institution / insurance
+   claim" feel appropriate to PI, while keeping the same
+   restrained, high-end gravitas rather than a bright
+   insurance-ad blue.
+
+   This is a fully STANDALONE page — no shared nav, no links to
+   or mentions of the employment calculator anywhere in this
+   file. A visitor arriving from a PI ad should never see any
+   trace of the employment product.
+   ============================================================ */
+:root{
+  --paper: #EFE8D8;
+  --paper-soft: #F6F1E6;
+  --surface: #FCFAF3;
+  --ink: #1B1E24;
+  --ink-soft: #565B63;
+  --ink-faint: #93968E;
+  --accent: #1F3350;       /* deep navy — primary CTA, selected states */
+  --accent-soft: #E3E8EE;  /* pale navy tint for selected backgrounds */
+  --silver: #8C93A0;       /* muted silver — progress, dividers, badges */
+  --silver-soft: #DCDFE3;
+  --line: rgba(27,30,36,0.14);
+  --line-strong: rgba(27,30,36,0.28);
+  --radius: 2px;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --max-w: 480px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:#101318;
+  color:var(--ink);
+  font-family:var(--sans);
+  min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+#app{
+  width:100%;
+  max-width:var(--max-w);
+  margin:0 auto;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  background:
+    linear-gradient(var(--paper-soft), var(--paper-soft)) top/100% 340px no-repeat,
+    var(--paper);
+}
+@media (min-width: 560px){
+  body{ padding:32px 0; }
+  #app{
+    min-height:calc(100dvh - 64px);
+    box-shadow:0 30px 80px -20px rgba(0,0,0,0.55);
+    border-radius:18px;
+    overflow:hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
+
+/* ---------- Header / progress ---------- */
+.header{ padding:22px 24px 0 24px; }
+.brand{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:15px;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  color:var(--ink);
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.brand .mark{ color:var(--accent); }
+.progress-rules{ display:flex; gap:4px; margin-top:18px; }
+.progress-rules span{
+  height:2px; flex:1; background:var(--line); border-radius:1px; overflow:hidden; position:relative;
+}
+.progress-rules span.done{ background:var(--silver); }
+.progress-rules span.current::after{
+  content:''; position:absolute; inset:0; background:var(--ink); animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{ 0%,100%{opacity:.15;} 50%{opacity:.55;} }
+.step-label{
+  margin-top:10px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;
+}
+
+/* ---------- Main content ---------- */
+.content{ flex:1; padding:28px 24px 140px 24px; display:flex; flex-direction:column; }
+.eyebrow{ font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:10px; }
+h1.q{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:28px; line-height:1.22; margin:0 0 10px 0; color:var(--ink); }
+.sub{ font-size:14.5px; line-height:1.5; color:var(--ink-soft); margin:0 0 26px 0; }
+
+/* ---------- Options ---------- */
+.options{ display:flex; flex-direction:column; gap:10px; }
+.opt{
+  text-align:left; background:var(--surface); border:1px solid var(--line-strong); border-left:3px solid transparent;
+  border-radius:var(--radius); padding:16px 18px; font-family:var(--sans); font-size:15.5px; font-weight:500; color:var(--ink);
+  cursor:pointer; transition:border-color .15s ease, background .15s ease, transform .1s ease;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.opt:hover{ border-color:var(--silver); }
+.opt:active{ transform:scale(0.99); }
+.opt .check{ width:18px; height:18px; border:1.5px solid var(--line-strong); border-radius:50%; flex:0 0 auto; position:relative; }
+.opt.selected{ background:var(--accent-soft); border-color:var(--accent); border-left-color:var(--accent); }
+.opt.selected .check{ border-color:var(--accent); background:var(--accent); }
+.opt.selected:not(.multi) .check::after{ content:''; position:absolute; inset:4px; background:#fff; border-radius:50%; }
+.opt .sub-note{ font-size:12px; color:var(--ink-faint); font-weight:400; }
+.opt-not-sure{ color:var(--ink-faint); font-style:italic; }
+
+/* ---------- Footer ---------- */
+.footer{
+  position:sticky; bottom:0; width:100%;
+  background:linear-gradient(180deg, rgba(239,232,216,0) 0%, var(--paper) 30%);
+  padding:20px 24px 26px 24px; display:flex; flex-direction:column; gap:10px;
+}
+.btn{ font-family:var(--sans); font-weight:600; font-size:15px; letter-spacing:0.01em; border-radius:var(--radius); padding:16px 20px; border:none; cursor:pointer; width:100%; transition:opacity .15s ease, transform .1s ease; }
+.btn:active{ transform:scale(0.99); }
+.btn-primary{ background:var(--accent); color:var(--paper-soft); }
+.btn-primary:disabled{ opacity:0.35; cursor:not-allowed; }
+.btn-ghost{ background:transparent; color:var(--ink-soft); border:1px solid var(--line-strong); }
+.back-link{ background:none; border:none; color:var(--ink-faint); font-family:var(--sans); font-size:13px; text-align:left; padding:0; cursor:pointer; margin-bottom:4px; align-self:flex-start; }
+
+/* ---------- Readout (ledger-tape number) ---------- */
+.readout{
+  font-family:'Inter', monospace; font-variant-numeric:tabular-nums; font-weight:600; font-size:34px;
+  letter-spacing:0.02em; color:var(--accent); margin:22px 0 6px 0; display:flex; align-items:baseline; gap:2px;
+}
+.readout .digit{ display:inline-block; min-width:0.62ch; }
+.readout .digit.tick{ animation:tickDigit 1.1s steps(10) 1 both; }
+@keyframes tickDigit{ 0%{ opacity:.3; transform:translateY(2px); } 100%{ opacity:1; transform:translateY(0); } }
+.readout-label{ font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 30px 0; }
+
+/* ---------- Stop screens ---------- */
+.stop{ padding-top:50px; }
+.stop .seal{ width:56px; height:56px; border:1.5px solid var(--ink); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-style:italic; font-size:22px; margin-bottom:26px; }
+.stop h1{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:26px; line-height:1.25; margin:0 0 14px 0; }
+.stop p{ font-size:14.5px; line-height:1.6; color:var(--ink-soft); }
+
+/* ---------- Reveal / contact ---------- */
+.reveal{ padding-top:36px; }
+.disclaimer{ margin-top:0; padding-top:20px; border-top:1px solid var(--line); font-size:11.5px; line-height:1.6; color:var(--ink-faint); text-align:left; }
+
+/* ---------- Fields ---------- */
+.field{ margin-bottom:16px; }
+.field label{ display:block; font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px; }
+.field input, .field textarea{ width:100%; background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius); padding:14px 16px; font-family:var(--sans); font-size:15.5px; color:var(--ink); }
+.field input:focus, .field textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+.field textarea{ resize:vertical; min-height:120px; }
+.consent{ font-size:11.5px; line-height:1.6; color:var(--ink-faint); margin-top:6px; }
+
+/* ---------- Thank you ---------- */
+.thankyou{ padding-top:60px; text-align:center; }
+</style>
+
+<!-- ============================================================
+     META (FACEBOOK) PIXEL — base tracking code
+     ------------------------------------------------------------
+     Same pixel/dataset as the employment page — shared, not
+     separate, per the decision to reuse one pixel and one inbox
+     across both verticals. Replace YOUR_PIXEL_ID_HERE with the
+     same real Pixel ID used in the root index.html.
+     ============================================================ -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1356237486653789');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1356237486653789&ev=PageView&noscript=1"
+/></noscript>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   DATA MODEL
+   ------------------------------------------------------------
+   Same mechanism as the employment calculator: every option
+   carries a `pts` value, points sum across whatever questions
+   this person's specific path actually asked, normalized to a
+   percentage, then curved (SKEW) into one of 9 figure-band
+   tiers. See computeResult() for the curve.
+
+   >>> POINT VALUES BELOW ARE PLACEHOLDERS <<<
+   Same caveat as the employment build: these are rough,
+   defensible-order-of-magnitude estimates for prototyping the
+   MECHANISM only. Before this is a real, live calculator, real
+   PI case-value judgment from the attorney who actually takes
+   these leads needs to replace these numbers.
+   ============================================================ */
+
+const TIERS = [
+  { label: 'Low five figures',   floor: 10000,    ceiling: 33000   },
+  { label: 'Mid five figures',   floor: 33000,    ceiling: 66000   },
+  { label: 'High five figures',  floor: 66000,    ceiling: 99000   },
+  { label: 'Low six figures',    floor: 100000,   ceiling: 233000  },
+  { label: 'Mid six figures',    floor: 233000,   ceiling: 466000  },
+  { label: 'High six figures',   floor: 466000,   ceiling: 699000  },
+  { label: 'Low seven figures',  floor: 700000,   ceiling: 2300000 },
+  { label: 'Mid seven figures',  floor: 2300000,  ceiling: 5600000 },
+  { label: 'High seven figures', floor: 5600000,  ceiling: null    },
+];
+function tierDisplayValue(tier){
+  if (tier.ceiling == null) return '$' + tier.floor.toLocaleString('en-US') + '+';
+  const mid = Math.round((tier.floor + tier.ceiling) / 2 / 1000) * 1000;
+  return '$' + mid.toLocaleString('en-US');
+}
+
+// ---- Incident type (single-select — unlike employment, PI
+// incident types are mutually exclusive, so this drives which
+// SOL rule applies and which follow-up questions appear) -------
+const INCIDENT_TYPES = [
+  { key: 'auto', label: 'Car or Motorcycle Accident', sub: 'Collision with another vehicle' },
+  { key: 'premises', label: 'Slip, Trip, or Fall', sub: 'Injury on someone else\u2019s property' },
+  { key: 'malpractice', label: 'Medical Malpractice', sub: 'Injury caused by a medical provider\u2019s error' },
+  { key: 'dogbite', label: 'Dog Bite or Animal Attack', sub: 'Injured by someone else\u2019s pet or animal' },
+  { key: 'other', label: 'Another Injury', sub: 'Defective product, or something not listed here' },
+];
+
+// Follow-up question shown only when incidentType === 'other' —
+// lets the person specify what actually happened, since
+// "Another Injury" alone is too broad a bucket to score or
+// route to an attorney meaningfully.
+const Q_OTHER_TYPE = {
+  id: 'otherType',
+  section: 'Incident',
+  title: 'Which best describes what happened?',
+  sub: '',
+  options: [
+    { label: 'Defective or dangerous product', pts: 3 },
+    { label: 'Recreational or sports injury', pts: 2 },
+    { label: 'Assault or intentional act by another person', pts: 3 },
+    { label: 'Injury on public transportation', pts: 3 },
+    { label: 'Something else', pts: 2 },
+  ],
+};
+
+// ---- Gate questions -----------------------------------------
+const Q_REPRESENTED = {
+  id: 'represented',
+  section: 'Eligibility',
+  title: 'Are you currently working with a lawyer on this matter?',
+  sub: 'Just so we route you correctly — no wrong answer here.',
+  options: [
+    { label: 'No, not yet', pts: 0 },
+    { label: 'Yes, I already have a lawyer', pts: 0, hardstop: 'represented' },
+  ],
+};
+
+// Government-entity involvement — only asked for auto/premises/
+// other, since it changes the filing deadline dramatically
+// (6-month claim presentation requirement under the CA
+// Government Claims Act) versus ordinary 2-year negligence SOL.
+// Not asked for malpractice, which runs on its own MICRA timing
+// regardless of who the defendant is (a public hospital
+// malpractice claim is a rare edge case not handled in this
+// prototype).
+const Q_GOVT_ENTITY = {
+  id: 'govtEntity',
+  section: 'Eligibility',
+  title: 'Was a government vehicle or public property involved?',
+  sub: 'For example, a city bus, a government-owned vehicle, or a public sidewalk or building.',
+  options: [
+    { label: 'No', pts: 2 },
+    { label: 'Yes', pts: 2, govtFlag: true },
+    { label: "Not sure", pts: 1, notSure: true },
+  ],
+};
+
+// SOL gate — wording and thresholds are built dynamically in
+// buildSolQuestion() below, since the actual rule depends on
+// incident type + government-entity flag:
+//   - Government entity involved: 6-month claim presentation
+//     deadline (Gov. Code 911.2) — much shorter than ordinary
+//     negligence.
+//   - Medical malpractice: MICRA (CCP 340.5) — generally 1 year
+//     from discovery of the injury, or 3 years from the injury
+//     itself, whichever comes first. Simplified here to a
+//     discovery-based question.
+//   - Everything else (ordinary auto/premises/other negligence):
+//     2-year SOL under CCP 335.1.
+function buildSolQuestion(incidentType, govtFlag){
+  if (govtFlag){
+    return {
+      id: 'sol',
+      section: 'Eligibility',
+      title: 'When did the incident happen?',
+      sub: 'Claims against government entities generally must be filed within 6 months.',
+      options: [
+        { label: 'Within the last 6 months', pts: 4 },
+        { label: '6 months to 1 year ago', pts: 1, hardstop: 'sol_govt_late' },
+        { label: 'More than a year ago', pts: 0, hardstop: 'sol_govt_late' },
+      ],
+    };
+  }
+  if (incidentType === 'malpractice'){
+    return {
+      id: 'sol',
+      section: 'Eligibility',
+      title: 'When did you discover the injury was caused by a medical error?',
+      sub: 'California generally requires filing within 1 year of discovery, and no more than 3 years from the injury itself.',
+      options: [
+        { label: 'Within the last year', pts: 4 },
+        { label: '1–3 years ago', pts: 2 },
+        { label: 'More than 3 years ago', pts: 0, hardstop: 'sol_malpractice' },
+      ],
+    };
+  }
+  return {
+    id: 'sol',
+    section: 'Eligibility',
+    title: 'When did the incident happen?',
+    sub: 'California generally requires filing within 2 years for this type of claim.',
+    options: [
+      { label: 'Within the last year', pts: 4 },
+      { label: '1–2 years ago', pts: 3 },
+      { label: 'More than 2 years ago', pts: 0, hardstop: 'sol_general' },
+    ],
+  };
+}
+
+// ---- Shared background / core questions ----------------------
+const Q_LIABILITY = {
+  id: 'liability',
+  section: 'Liability',
+  title: 'Do you believe the other party was at fault?',
+  sub: '',
+  options: [
+    { label: 'Yes, clearly', pts: 4 },
+    { label: 'Mostly, but it may be shared', pts: 2 },
+    { label: "Not sure", pts: 1, notSure: true },
+    { label: 'No, I was likely at fault', pts: 0 },
+  ],
+};
+
+const Q_INSURANCE = {
+  id: 'insurance',
+  section: 'Insurance',
+  title: 'Did the other party have insurance?',
+  sub: '',
+  options: [
+    { label: 'Yes', pts: 4 },
+    { label: 'No — uninsured', pts: 1 },
+    { label: "Not sure", pts: 1, notSure: true },
+  ],
+};
+
+const Q_UM_UIM = {
+  id: 'umUim',
+  section: 'Insurance',
+  title: 'Do you have uninsured/underinsured motorist coverage?',
+  sub: 'This can still apply even if the other driver had little or no insurance.',
+  options: [
+    { label: 'Yes', pts: 3 },
+    { label: 'No', pts: 1 },
+    { label: "Not sure", pts: 1, notSure: true },
+  ],
+};
+
+const Q_SEVERITY = {
+  id: 'severity',
+  section: 'Injury',
+  title: 'How would you describe your injuries?',
+  sub: '',
+  options: [
+    { label: 'Minor — resolved quickly', pts: 1 },
+    { label: 'Moderate — required real treatment', pts: 2 },
+    { label: 'Severe — significant, lasting impact', pts: 4 },
+    { label: 'Catastrophic — permanent or life-altering', pts: 4 },
+  ],
+};
+
+const Q_TREATMENT = {
+  id: 'treatment',
+  section: 'Injury',
+  title: 'Are you still receiving treatment?',
+  sub: '',
+  options: [
+    { label: 'Yes, ongoing treatment', pts: 3 },
+    { label: 'No, treatment is complete', pts: 2 },
+    { label: "Haven't started treatment yet", pts: 1 },
+  ],
+};
+
+const Q_DOCUMENTATION = {
+  id: 'documentation',
+  section: 'Documentation',
+  title: 'Do you have documentation of the incident?',
+  sub: 'Police report, medical records, photos, or witness info.',
+  options: [
+    { label: 'Yes, several things saved', pts: 4 },
+    { label: 'Yes, a little', pts: 2 },
+    { label: 'No documentation', pts: 0 },
+    { label: "Not sure / haven't checked", pts: 1, notSure: true },
+  ],
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  screen: 'category',
+  incidentType: null,
+  govtFlag: false,
+  answers: {},
+  notSureCount: 0,
+  steps: [],
+  stepIndex: 0,
+  hardstopReason: null,
+  contact: { name: '', email: '', phone: '' },
+  freeText: '',
+  startTime: Date.now(),
+};
+
+function resetState(){
+  state = {
+    screen: 'category',
+    incidentType: null,
+    govtFlag: false,
+    answers: {},
+    notSureCount: 0,
+    steps: [],
+    stepIndex: 0,
+    hardstopReason: null,
+    contact: { name: '', email: '', phone: '' },
+    freeText: '',
+    startTime: Date.now(),
+  };
+  render();
+}
+
+/* ============================================================
+   FLOW LOGIC
+   ============================================================ */
+function buildSteps(){
+  const steps = [Q_REPRESENTED];
+
+  // Government-entity question skipped for malpractice — see
+  // comment on Q_GOVT_ENTITY above.
+  if (state.incidentType !== 'malpractice') {
+    steps.push(Q_GOVT_ENTITY);
+  }
+
+  // SOL question is built dynamically once we know govtFlag,
+  // but govtFlag isn't known until Q_GOVT_ENTITY is answered.
+  // We insert a placeholder here and swap it for the real
+  // question object in selectOption() once govtFlag is set.
+  steps.push(buildSolQuestion(state.incidentType, false));
+
+  // "Another Injury" needs one clarifying question before the
+  // core scored questions, so the lead is actually usable —
+  // otherwise "other" tells the attorney nothing about what
+  // happened.
+  if (state.incidentType === 'other') {
+    steps.push(Q_OTHER_TYPE);
+  }
+
+  steps.push(Q_LIABILITY, Q_INSURANCE);
+  if (state.incidentType === 'auto') steps.push(Q_UM_UIM);
+  steps.push(Q_SEVERITY, Q_TREATMENT, Q_DOCUMENTATION);
+
+  return steps;
+}
+
+function currentQuestion(){ return state.steps[state.stepIndex]; }
+
+function selectOption(question, option){
+  state.answers[question.id] = option;
+  if (option.notSure) state.notSureCount++;
+
+  if (option.govtFlag !== undefined) {
+    state.govtFlag = option.govtFlag;
+    // Rebuild the SOL question (next step) now that we know
+    // whether the government 6-month rule applies.
+    const solIndex = state.steps.findIndex(q => q.id === 'sol');
+    if (solIndex > -1) {
+      state.steps[solIndex] = buildSolQuestion(state.incidentType, state.govtFlag);
+    }
+  }
+
+  if (option.hardstop) {
+    state.hardstopReason = option.hardstop;
+    state.screen = 'stop';
+    render();
+    return;
+  }
+
+  advance();
+}
+
+function advance(){
+  if (state.stepIndex < state.steps.length - 1) {
+    state.stepIndex++;
+    render();
+  } else {
+    computeResult();
+  }
+}
+
+function goBack(){
+  if (state.stepIndex > 0) {
+    state.stepIndex--;
+    render();
+  } else {
+    state.screen = 'category';
+    render();
+  }
+}
+
+function computeResult(){
+  let score = 0, max = 0;
+  state.steps.forEach(q => {
+    const chosen = state.answers[q.id];
+    const best = Math.max(...q.options.map(o => o.pts));
+    max += best;
+    if (chosen) score += chosen.pts;
+  });
+  const pct = max > 0 ? score / max : 0;
+  // Same skew curve as the employment build — see that file's
+  // computeResult() for the full rationale. Ordinary/moderate
+  // answer combinations should land low-to-mid, not high.
+  // >>> TUNABLE, PLACEHOLDER <<<
+  // Same mechanism as employment: raising SKEW pushes ordinary
+  // answer combinations further down into lower tiers, since
+  // only scores close to the true maximum reach the top of the
+  // curve. Bumped higher than employment's 1.6 because PI's
+  // question set has fewer "weak" options overall, so raw
+  // percentages run higher for a typical case even before any
+  // curving — needed a stronger pull down to compensate.
+  const SKEW = 2.2;
+  const skewedPct = Math.pow(pct, SKEW);
+  const tierIndex = Math.min(TIERS.length - 1, Math.floor(skewedPct * TIERS.length));
+  state.tierIndex = tierIndex;
+  state.screen = 'reveal';
+  render();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+function appendAll(container, html){ const t = document.createElement('template'); t.innerHTML = html.trim(); container.append(...t.content.childNodes); }
+
+function progressBar(){
+  if (!state.steps.length) return '';
+  const total = state.steps.length;
+  let ticks = '';
+  for (let i = 0; i < total; i++){
+    const cls = i < state.stepIndex ? 'done' : (i === state.stepIndex ? 'current' : '');
+    ticks += `<span class="${cls}"></span>`;
+  }
+  return `<div class="progress-rules">${ticks}</div><div class="step-label">Step ${state.stepIndex + 1} of ${total}</div>`;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  if (state.screen === 'category') return renderCategory(app);
+  if (state.screen === 'question') return renderQuestion(app);
+  if (state.screen === 'stop') return renderStop(app);
+  if (state.screen === 'reveal') return renderReveal(app);
+  if (state.screen === 'thankyou') return renderThankYou(app);
+}
+
+function renderCategory(app){
+  const header = el(`
+    <div class="header">
+      <div class="brand"><span class="mark">§</span> The Injury Calculator</div>
+      <div class="readout" id="readout" style="font-size:24px; margin:1px 0 4px 0;">
+        <span class="digit">$</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span><span class="digit">,</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span>
+      </div>
+      <div class="readout-label" style="margin-bottom:6px;">Your estimate appears here when you're done</div>
+    </div>
+  `);
+  app.appendChild(header);
+
+  const content = el(`
+    <div class="content">
+      <div class="eyebrow">Step 1 · California</div>
+      <h1 class="q">What happened to you?</h1>
+      <p class="sub">Select the one that best fits. Free, with no obligation.</p>
+      <div class="options" id="cat-options"></div>
+    </div>
+  `);
+  app.appendChild(content);
+
+  const optWrap = content.querySelector('#cat-options');
+  INCIDENT_TYPES.forEach(t => {
+    const selected = state.incidentType === t.key;
+    const btn = el(`
+      <button class="opt ${selected ? 'selected' : ''}">
+        <span>${t.label}<br><span class="sub-note">${t.sub}</span></span>
+        <span class="check"></span>
+      </button>
+    `);
+    btn.onclick = () => {
+      state.incidentType = t.key;
+      state.steps = buildSteps();
+      state.stepIndex = 0;
+      state.screen = 'question';
+      render();
+    };
+    optWrap.appendChild(btn);
+  });
+
+  if (!window.__piReadoutTicked){
+    window.__piReadoutTicked = true;
+    const digitEls = app.querySelectorAll('#readout .digit');
+    const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    digitEls.forEach((d, i) => {
+      if (d.textContent === '$' || d.textContent === ',') return;
+      if (reduceMotion){ d.textContent = '—'; return; }
+      let ticks = 0; const maxTicks = 6 + i;
+      const iv = setInterval(() => {
+        d.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+        ticks++;
+        if (ticks >= maxTicks){ clearInterval(iv); d.textContent = '—'; d.classList.add('tick'); }
+      }, 55);
+    });
+  }
+}
+
+function renderQuestion(app){
+  const q = currentQuestion();
+  const header = el(`
+    <div class="header">
+      <div class="brand"><span class="mark">§</span> The Injury Calculator</div>
+      ${progressBar()}
+    </div>
+  `);
+  app.appendChild(header);
+
+  const content = el(`
+    <div class="content">
+      <div class="eyebrow">${q.section}</div>
+      <h1 class="q">${q.title}</h1>
+      ${q.sub ? `<p class="sub">${q.sub}</p>` : '<div style="height:26px;"></div>'}
+      <div class="options" id="q-options"></div>
+    </div>
+  `);
+  app.appendChild(content);
+
+  const optWrap = content.querySelector('#q-options');
+  q.options.forEach(opt => {
+    const b = el(`
+      <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
+        <span>${opt.label}</span>
+        <span class="check"></span>
+      </button>
+    `);
+    b.onclick = () => selectOption(q, opt);
+    optWrap.appendChild(b);
+  });
+
+  const footer = el(`<div class="footer"><button class="back-link" id="back">&larr; Back</button></div>`);
+  app.appendChild(footer);
+  document.getElementById('back').onclick = goBack;
+}
+
+function renderStop(app){
+  const copy = {
+    represented: {
+      h: 'Looks like you\u2019re already represented',
+      p: 'Since you\u2019re already working with a lawyer on this matter, we\u2019re not able to take this further — your existing attorney is the right person to advise you.',
+    },
+    sol_govt_late: {
+      h: 'This may be outside the filing window',
+      p: 'Claims against government entities in California generally must be filed within 6 months of the incident. Based on your answer, this may fall outside that window — but exceptions can apply, so it\u2019s still worth a quick call with an attorney to confirm.',
+    },
+    sol_malpractice: {
+      h: 'This may be outside the filing window',
+      p: 'California generally requires medical malpractice claims to be filed within 1 year of discovering the injury, and no more than 3 years from when it happened. Based on your answer, this may fall outside that window — but exceptions can apply.',
+    },
+    sol_general: {
+      h: 'This may be outside the filing window',
+      p: 'California generally requires this type of claim to be filed within 2 years. Based on your answer, this may fall outside that window — but exceptions can apply, so it\u2019s still worth a quick call with an attorney to confirm.',
+    },
+  };
+  const c = copy[state.hardstopReason] || copy.represented;
+  appendAll(app, `
+    <div class="content stop">
+      <div class="seal">§</div>
+      <h1>${c.h}</h1>
+      <p>${c.p}</p>
+    </div>
+    <div class="footer">
+      <button class="btn btn-ghost" id="restart">Start over</button>
+    </div>
+  `);
+  document.getElementById('restart').onclick = resetState;
+}
+
+function renderReveal(app){
+  const tier = TIERS[state.tierIndex];
+  const target = tierDisplayValue(tier);
+  appendAll(app, `
+    <div class="header"><div class="brand"><span class="mark">§</span> The Injury Calculator</div></div>
+    <div class="content reveal" style="text-align:left; padding-bottom:8px;">
+      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">Your estimate</div>
+      <div class="readout" id="reveal-readout" style="font-size:44px; margin:2px 0 0 0;"></div>
+      <div class="readout-label" style="margin-bottom:14px;">${tier.label} · based on what you\u2019ve shared</div>
+
+      <div class="eyebrow" style="margin-top:10px; text-align:center;">Have an attorney call you</div>
+      <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
+      <p class="sub" style="margin-bottom:20px; text-align:center;">Free, with no obligation. An attorney will call you within a business day.</p>
+      <div class="field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" type="text" placeholder="Jane Rivera" value="${state.contact.name}">
+      </div>
+      <div class="field">
+        <label for="f-phone">Phone number</label>
+        <input id="f-phone" type="tel" placeholder="(555) 555-5555" value="${state.contact.phone}">
+      </div>
+      <div class="field">
+        <label for="f-email">Email address</label>
+        <input id="f-email" type="email" placeholder="jane@email.com" value="${state.contact.email}">
+      </div>
+      <div class="field">
+        <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
+        <textarea id="f-freetext" placeholder="Dates, names, or details in your own words — this doesn't change your estimate, it just helps the call go faster.">${state.freeText}</textarea>
+      </div>
+      <!-- Honeypot — same bot-detection pattern as the employment build -->
+      <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+        <label for="f-website">Website</label>
+        <input id="f-website" type="text" name="website" tabindex="-1" autocomplete="off">
+      </div>
+    </div>
+    <div class="footer" style="padding-top:4px;">
+      <button class="btn btn-primary" id="contact-submit">Submit</button>
+      <p class="consent">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
+      <div class="disclaimer" style="text-align:left; margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
+        This estimate is general and educational — it\u2019s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually be worth.
+      </div>
+    </div>
+  `);
+
+  const submitBtn = document.getElementById('contact-submit');
+  submitBtn.onclick = async () => {
+    state.contact.name = document.getElementById('f-name').value;
+    state.contact.phone = document.getElementById('f-phone').value;
+    state.contact.email = document.getElementById('f-email').value;
+    state.freeText = document.getElementById('f-freetext').value;
+
+    if (!state.contact.name.trim() || (!state.contact.phone.trim() && !state.contact.email.trim())) {
+      submitBtn.textContent = 'Please add your name and phone or email';
+      setTimeout(() => { submitBtn.textContent = 'Submit'; }, 2200);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    // Shared event ID for Meta CAPI/browser-pixel deduplication —
+    // same mechanism as employment.
+    const eventId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('lead_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+
+    // Full, readable case record — same shape as employment's
+    // payload, plus `vertical: 'PI'` so the shared inbox and
+    // shared backend can tell the two apart at a glance.
+    const answers = state.steps.map(q => {
+      const chosen = state.answers[q.id];
+      return {
+        section: q.section,
+        title: q.title,
+        answer: chosen ? chosen.label : 'Not answered',
+      };
+    });
+
+    const payload = {
+      vertical: 'PI', // <-- the one new field vs. employment's payload
+      name: state.contact.name,
+      phone: state.contact.phone,
+      email: state.contact.email,
+      categories: [INCIDENT_TYPES.find(t => t.key === state.incidentType)?.label || state.incidentType],
+      tierLabel: TIERS[state.tierIndex].label,
+      estimateDisplay: tierDisplayValue(TIERS[state.tierIndex]),
+      freeText: state.freeText,
+      answers,
+      website: document.getElementById('f-website').value, // honeypot
+      elapsedMs: Date.now() - state.startTime,
+      eventId,
+      eventSourceUrl: window.location.href,
+    };
+
+    try {
+      // SAME endpoint as employment — no separate PI backend.
+      await fetch('/api/submit-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error('PI lead submission failed to send:', err);
+    }
+
+    // Same shared Meta Pixel Lead event as employment.
+    if (typeof fbq === 'function') {
+      fbq('track', 'Lead', {}, { eventID: eventId });
+    }
+
+    state.screen = 'thankyou';
+    render();
+  };
+
+  const readoutEl = document.getElementById('reveal-readout');
+  const chars = target.split('');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
+  chars.forEach((ch, i) => {
+    const span = document.createElement('span');
+    span.className = 'digit';
+    readoutEl.appendChild(span);
+    if (!/[0-9]/.test(ch) || reduceMotion){ span.textContent = ch; return; }
+    let ticks = 0; const maxTicks = 6 + i;
+    const iv = setInterval(() => {
+      span.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+      ticks++;
+      if (ticks >= maxTicks){ clearInterval(iv); span.textContent = ch; span.classList.add('tick'); }
+    }, 55);
+  });
+}
+
+function renderThankYou(app){
+  appendAll(app, `
+    <div class="content thankyou">
+      <div class="seal" style="margin:0 auto 26px auto;">✓</div>
+      <h1 style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:26px; margin:0 0 14px 0;">You're all set</h1>
+      <p style="font-size:14.5px; line-height:1.6; color:var(--ink-soft);">A personal injury attorney will call you within one business day. In the meantime, keep any medical records, photos, or documents related to your situation somewhere safe.</p>
+    </div>
+    <div class="footer">
+      <button class="btn btn-ghost" id="restart2">Start a new case check</button>
+    </div>
+  `);
+  document.getElementById('restart2').onclick = resetState;
+}
+
+render();
+</script>
+</body>
+</html>

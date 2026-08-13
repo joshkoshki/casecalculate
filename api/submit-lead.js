@@ -125,6 +125,8 @@ async function sendMetaCapiEvent(lead) {
 const COLOR = {
   oxblood: rgb(0x6e / 255, 0x23 / 255, 0x32 / 255),
   gold: rgb(0x92 / 255, 0x79 / 255, 0x3c / 255),
+  navy: rgb(0x1f / 255, 0x33 / 255, 0x50 / 255),   // PI accent — matches the /injury page
+  silver: rgb(0x8c / 255, 0x93 / 255, 0xa0 / 255), // PI secondary accent
   ink: rgb(0x21 / 255, 0x1d / 255, 0x17 / 255),
   inkSoft: rgb(0x5b / 255, 0x56 / 255, 0x48 / 255),
   line: rgb(0xe6 / 255, 0xe0 / 255, 0xd2 / 255),
@@ -182,8 +184,15 @@ async function buildLeadPdf(lead) {
     });
   }
 
+  // Vertical-aware accent — same logic as buildEmailHtml above,
+  // so the attached PDF visually matches which site the lead
+  // actually came from.
+  const isPI = lead.vertical === 'PI';
+  const accent = isPI ? COLOR.silver : COLOR.gold;
+  const headerLabel = isPI ? 'P E R S O N A L   I N J U R Y   L E A D' : 'N E W   L E A D';
+
   // ---- Header ----
-  text('N E W   L E A D', margin, 9, fontBold, COLOR.gold);
+  text(headerLabel, margin, 9, fontBold, accent);
   y -= 26;
   text(lead.name || 'No name provided', margin, 24, fontBold, COLOR.ink);
   y -= 22;
@@ -193,11 +202,11 @@ async function buildLeadPdf(lead) {
   // ---- Contact block ----
   const rowH = 24;
   page.drawRectangle({ x: margin, y: y - rowH, width: contentW, height: rowH, color: COLOR.bg });
-  text('PHONE', margin + 10, 8, fontBold, COLOR.gold, y - 15);
+  text('PHONE', margin + 10, 8, fontBold, accent, y - 15);
   text(lead.phone || 'Not provided', margin + 100, 11, fontRegular, COLOR.ink, y - 16);
   y -= rowH;
   hr();
-  text('EMAIL', margin + 10, 8, fontBold, COLOR.gold, y - 15);
+  text('EMAIL', margin + 10, 8, fontBold, accent, y - 15);
   text(lead.email || 'Not provided', margin + 100, 11, fontRegular, COLOR.ink, y - 16);
   y -= rowH;
   page.drawRectangle({
@@ -209,7 +218,7 @@ async function buildLeadPdf(lead) {
   // ---- Free text, if provided ----
   if (lead.freeText && lead.freeText.trim()) {
     const labelY = y;
-    text('IN THEIR OWN WORDS', margin + 12, 8, fontBold, COLOR.gold);
+    text('IN THEIR OWN WORDS', margin + 12, 8, fontBold, accent);
     y -= 16;
     const lines = wrapText(lead.freeText, fontRegular, 11, contentW - 24);
     const blockTop = labelY + 10;
@@ -221,7 +230,7 @@ async function buildLeadPdf(lead) {
     const blockBottom = y - 6;
     page.drawRectangle({
       x: margin, y: blockBottom, width: 3, height: blockTop - blockBottom,
-      color: COLOR.gold,
+      color: accent,
     });
     y -= 20;
   }
@@ -239,7 +248,7 @@ async function buildLeadPdf(lead) {
 
     if (a.section !== lastSection) {
       ensureSpace(30);
-      text(a.section, margin, 9, fontBold, COLOR.gold);
+      text(a.section, margin, 9, fontBold, accent);
       y -= 18;
       lastSection = a.section;
     }
@@ -270,9 +279,20 @@ async function buildLeadPdf(lead) {
 function buildEmailHtml(lead) {
   const {
     name, phone, email,
-    categories,
+    categories, vertical,
     freeText, answers, // answers is an ordered array of {section, title, answer}
   } = lead;
+
+  // Vertical-aware styling: PI leads get a navy header labeled
+  // "PERSONAL INJURY LEAD", employment leads keep the original
+  // oxblood header labeled "NEW LEAD" (no vertical field sent
+  // for employment, so it defaults to that branch). This is the
+  // "clearly tagged/labeled" requirement from the shared-inbox
+  // decision — same endpoint, same inbox, but instantly
+  // distinguishable at a glance.
+  const isPI = vertical === 'PI';
+  const headerColor = isPI ? '#1F3350' : '#6E2332';
+  const headerLabel = isPI ? 'Personal Injury Lead' : 'New Lead';
 
   const answerRows = answers.map(a => `
     <tr>
@@ -286,8 +306,8 @@ function buildEmailHtml(lead) {
 
   return `
   <div style="font-family: Arial, sans-serif; max-width:640px; margin:0 auto; color:#211D17;">
-    <div style="background:#6E2332; color:#F6F1E6; padding:20px 24px; border-radius:4px 4px 0 0;">
-      <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.8;">New Lead</div>
+    <div style="background:${headerColor}; color:#F6F1E6; padding:20px 24px; border-radius:4px 4px 0 0;">
+      <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.8;">${escapeHtml(headerLabel)}</div>
       <div style="font-size:22px; font-weight:700; margin-top:4px;">${escapeHtml(name || 'No name provided')}</div>
       <div style="font-size:14px; margin-top:6px; opacity:0.9;">${escapeHtml((categories || []).join(', '))}</div>
     </div>
@@ -296,11 +316,11 @@ function buildEmailHtml(lead) {
       <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
         <tr>
           <td style="padding:4px 12px 4px 0; font-size:12px; color:#8a8474; text-transform:uppercase;">Phone</td>
-          <td style="padding:4px 0; font-size:14px;"><a href="tel:${escapeHtml(phone)}" style="color:#6E2332;">${escapeHtml(phone || 'Not provided')}</a></td>
+          <td style="padding:4px 0; font-size:14px;"><a href="tel:${escapeHtml(phone)}" style="color:${headerColor};">${escapeHtml(phone || 'Not provided')}</a></td>
         </tr>
         <tr>
           <td style="padding:4px 12px 4px 0; font-size:12px; color:#8a8474; text-transform:uppercase;">Email</td>
-          <td style="padding:4px 0; font-size:14px;"><a href="mailto:${escapeHtml(email)}" style="color:#6E2332;">${escapeHtml(email || 'Not provided')}</a></td>
+          <td style="padding:4px 0; font-size:14px;"><a href="mailto:${escapeHtml(email)}" style="color:${headerColor};">${escapeHtml(email || 'Not provided')}</a></td>
         </tr>
       </table>
 
@@ -385,7 +405,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const subject = `New Lead: ${lead.name || 'Unknown'} — ${(lead.categories || []).join(', ')}`;
+  const subject = `${lead.vertical === 'PI' ? '[PI] ' : '[Employment] '}New Lead: ${lead.name || 'Unknown'} — ${(lead.categories || []).join(', ')}`;
 
   // Build the attached PDF. Isolated in its own try/catch so a
   // PDF generation failure never blocks the email itself from
