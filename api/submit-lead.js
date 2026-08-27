@@ -127,11 +127,26 @@ const COLOR = {
   gold: rgb(0x92 / 255, 0x79 / 255, 0x3c / 255),
   navy: rgb(0x1f / 255, 0x33 / 255, 0x50 / 255),   // PI accent — matches the /injury page
   silver: rgb(0x8c / 255, 0x93 / 255, 0xa0 / 255), // PI secondary accent
+  forest: rgb(0x24 / 255, 0x40 / 255, 0x2f / 255), // Workers' comp accent — matches /workerscomp
+  bronze: rgb(0x9c / 255, 0x80 / 255, 0x46 / 255),  // Workers' comp secondary accent
   ink: rgb(0x21 / 255, 0x1d / 255, 0x17 / 255),
   inkSoft: rgb(0x5b / 255, 0x56 / 255, 0x48 / 255),
   line: rgb(0xe6 / 255, 0xe0 / 255, 0xd2 / 255),
   bg: rgb(0xf6 / 255, 0xf1 / 255, 0xe6 / 255),
 };
+
+// Central lookup for per-vertical branding — used by both the
+// PDF builder and the HTML email builder below, so adding a
+// future vertical only means adding one entry here rather than
+// hunting down every place a color/label is hardcoded.
+const VERTICAL_BRANDING = {
+  PI:      { pdfAccent: COLOR.silver, pdfLabel: 'P E R S O N A L   I N J U R Y   L E A D', emailColor: '#1F3350', emailLabel: 'Personal Injury Lead', subjectTag: '[PI] ' },
+  WC:      { pdfAccent: COLOR.bronze, pdfLabel: 'W O R K E R S \u2019   C O M P   L E A D',    emailColor: '#24402F', emailLabel: 'Workers\u2019 Comp Lead',   subjectTag: '[WC] ' },
+  default: { pdfAccent: COLOR.gold,   pdfLabel: 'N E W   L E A D',                          emailColor: '#6E2332', emailLabel: 'New Lead',              subjectTag: '[Employment] ' },
+};
+function brandingFor(vertical){
+  return VERTICAL_BRANDING[vertical] || VERTICAL_BRANDING.default;
+}
 
 function wrapText(text, font, size, maxWidth) {
   const words = String(text).split(' ');
@@ -184,12 +199,12 @@ async function buildLeadPdf(lead) {
     });
   }
 
-  // Vertical-aware accent — same logic as buildEmailHtml above,
+  // Vertical-aware accent — same logic as buildEmailHtml below,
   // so the attached PDF visually matches which site the lead
   // actually came from.
-  const isPI = lead.vertical === 'PI';
-  const accent = isPI ? COLOR.silver : COLOR.gold;
-  const headerLabel = isPI ? 'P E R S O N A L   I N J U R Y   L E A D' : 'N E W   L E A D';
+  const branding = brandingFor(lead.vertical);
+  const accent = branding.pdfAccent;
+  const headerLabel = branding.pdfLabel;
 
   // ---- Header ----
   text(headerLabel, margin, 9, fontBold, accent);
@@ -290,9 +305,9 @@ function buildEmailHtml(lead) {
   // "clearly tagged/labeled" requirement from the shared-inbox
   // decision — same endpoint, same inbox, but instantly
   // distinguishable at a glance.
-  const isPI = vertical === 'PI';
-  const headerColor = isPI ? '#1F3350' : '#6E2332';
-  const headerLabel = isPI ? 'Personal Injury Lead' : 'New Lead';
+  const emailBranding = brandingFor(vertical);
+  const headerColor = emailBranding.emailColor;
+  const headerLabel = emailBranding.emailLabel;
 
   const answerRows = answers.map(a => `
     <tr>
@@ -405,7 +420,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const subject = `${lead.vertical === 'PI' ? '[PI] ' : '[Employment] '}New Lead: ${lead.name || 'Unknown'} — ${(lead.categories || []).join(', ')}`;
+  const subject = `${brandingFor(lead.vertical).subjectTag}New Lead: ${lead.name || 'Unknown'} — ${(lead.categories || []).join(', ')}`;
 
   // Build the attached PDF. Isolated in its own try/catch so a
   // PDF generation failure never blocks the email itself from
