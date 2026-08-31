@@ -11,14 +11,20 @@
    WORKERS' COMP SITE — DESIGN TOKENS
    Same editorial system as employment (oxblood/gold) and PI
    (navy/silver): Fraunces serif, warm vellum paper, ledger/
-   legal-document motif. Third palette in the family: deep
-   forest green as primary, muted bronze/brass as accent —
-   evokes "established, institutional" without duplicating
-   either existing vertical's color identity.
+   legal-document motif. Forest green primary, muted bronze
+   accent.
+
+   BILINGUAL: every question, option, button, and disclaimer
+   shows English with a Spanish translation directly beneath it
+   (see the bi() helper below) — not a language toggle. This is
+   a deliberate choice: a lot of workers in this industry are
+   more comfortable in Spanish, and a toggle means someone could
+   miss content entirely if they never find the switch. Showing
+   both, always, means nothing is gatekept behind a language
+   choice.
 
    STANDALONE PAGE — own route (/workerscomp), no links to or
-   from employment or PI. A visitor from a workers' comp ad
-   should see nothing suggesting the other verticals exist.
+   from employment or PI.
    ============================================================ */
 :root{
   --paper: #EFE8D8;
@@ -27,9 +33,9 @@
   --ink: #1C1F1B;
   --ink-soft: #575B52;
   --ink-faint: #92948C;
-  --accent: #24402F;       /* deep forest green — primary CTA, selected states */
-  --accent-soft: #E1E7DE;  /* pale green tint for selected backgrounds */
-  --bronze: #9C8046;       /* muted brass/bronze — progress, dividers, badges */
+  --accent: #24402F;
+  --accent-soft: #E1E7DE;
+  --bronze: #9C8046;
   --bronze-soft: #E5DBC4;
   --line: rgba(28,31,27,0.14);
   --line-strong: rgba(28,31,27,0.28);
@@ -99,26 +105,29 @@ body{
 }
 @keyframes pulse{ 0%,100%{opacity:.15;} 50%{opacity:.55;} }
 .step-label{
-  margin-top:10px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;
+  margin-top:10px; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;
 }
 
 /* ---------- Main content ---------- */
 .content{ flex:1; padding:28px 24px 140px 24px; display:flex; flex-direction:column; }
 .eyebrow{ font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:10px; }
-h1.q{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:28px; line-height:1.22; margin:0 0 10px 0; color:var(--ink); }
-.sub{ font-size:14.5px; line-height:1.5; color:var(--ink-soft); margin:0 0 26px 0; }
+h1.q{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:26px; line-height:1.22; margin:0 0 2px 0; color:var(--ink); }
+.q-es{ font-family:var(--sans); font-weight:400; font-size:13px; line-height:1.3; color:var(--ink-faint); font-style:italic; opacity:0.85; margin:0 0 10px 0; }
+.sub{ font-size:14px; line-height:1.5; color:var(--ink-soft); margin:0 0 4px 0; }
+.sub-es{ font-size:12px; line-height:1.5; color:var(--ink-faint); font-style:italic; opacity:0.8; margin:0 0 24px 0; }
 
 /* ---------- Options ---------- */
 .options{ display:flex; flex-direction:column; gap:10px; }
 .opt{
   text-align:left; background:var(--surface); border:1px solid var(--line-strong); border-left:3px solid transparent;
-  border-radius:var(--radius); padding:16px 18px; font-family:var(--sans); font-size:15.5px; font-weight:500; color:var(--ink);
+  border-radius:var(--radius); padding:14px 18px; font-family:var(--sans); font-size:15.5px; font-weight:500; color:var(--ink);
   cursor:pointer; transition:border-color .15s ease, background .15s ease, transform .1s ease;
   display:flex; align-items:center; justify-content:space-between; gap:12px;
 }
 .opt:hover{ border-color:var(--bronze); }
 .opt:active{ transform:scale(0.99); }
-.opt .check{ width:18px; height:18px; border:1.5px solid var(--line-strong); border-radius:50%; flex:0 0 auto; position:relative; }
+.opt .opt-es{ display:block; font-size:11.5px; font-weight:400; font-style:italic; color:var(--ink-faint); opacity:0.8; margin-top:2px; }
+.opt .check{ width:18px; height:18px; border:1.5px solid var(--line-strong); border-radius:50%; flex:0 0 auto; position:relative; margin-top:2px; }
 .opt.selected{ background:var(--accent-soft); border-color:var(--accent); border-left-color:var(--accent); }
 .opt.selected .check{ border-color:var(--accent); background:var(--accent); }
 .opt.selected:not(.multi) .check::after{ content:''; position:absolute; inset:4px; background:#fff; border-radius:50%; }
@@ -131,7 +140,8 @@ h1.q{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:28
   background:linear-gradient(180deg, rgba(239,232,216,0) 0%, var(--paper) 30%);
   padding:20px 24px 26px 24px; display:flex; flex-direction:column; gap:10px;
 }
-.btn{ font-family:var(--sans); font-weight:600; font-size:15px; letter-spacing:0.01em; border-radius:var(--radius); padding:16px 20px; border:none; cursor:pointer; width:100%; transition:opacity .15s ease, transform .1s ease; }
+.btn{ font-family:var(--sans); font-weight:600; font-size:15px; letter-spacing:0.01em; border-radius:var(--radius); padding:16px 20px; border:none; cursor:pointer; width:100%; transition:opacity .15s ease, transform .1s ease; text-align:center; }
+.btn .btn-es{ display:block; font-size:11px; font-weight:400; font-style:italic; opacity:0.7; margin-top:2px; }
 .btn:active{ transform:scale(0.99); }
 .btn-primary{ background:var(--accent); color:var(--paper-soft); }
 .btn-primary:disabled{ opacity:0.35; cursor:not-allowed; }
@@ -146,32 +156,37 @@ h1.q{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:28
 .readout .digit{ display:inline-block; min-width:0.62ch; }
 .readout .digit.tick{ animation:tickDigit 1.1s steps(10) 1 both; }
 @keyframes tickDigit{ 0%{ opacity:.3; transform:translateY(2px); } 100%{ opacity:1; transform:translateY(0); } }
-.readout-label{ font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 30px 0; }
+.readout-label{ font-size:11px; letter-spacing:0.04em; color:var(--ink-faint); margin:0 0 2px 0; }
+.readout-label-es{ font-size:10px; letter-spacing:0.03em; color:var(--ink-faint); font-style:italic; opacity:0.75; margin:0 0 30px 0; }
 
 /* ---------- Stop screens ---------- */
 .stop{ padding-top:50px; }
 .stop .seal{ width:56px; height:56px; border:1.5px solid var(--ink); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-style:italic; font-size:22px; margin-bottom:26px; }
-.stop h1{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:26px; line-height:1.25; margin:0 0 14px 0; }
-.stop p{ font-size:14.5px; line-height:1.6; color:var(--ink-soft); }
+.stop h1{ font-family:var(--serif); font-weight:500; font-style:italic; font-size:24px; line-height:1.25; margin:0 0 2px 0; }
+.stop .h-es{ font-family:var(--sans); font-weight:400; font-size:13px; font-style:italic; color:var(--ink-faint); opacity:0.85; margin:0 0 16px 0; }
+.stop p{ font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 4px 0; }
+.stop .p-es{ font-size:12px; line-height:1.6; color:var(--ink-faint); font-style:italic; opacity:0.8; }
 
 /* ---------- Reveal / contact ---------- */
 .reveal{ padding-top:36px; }
-.disclaimer{ margin-top:0; padding-top:20px; border-top:1px solid var(--line); font-size:11.5px; line-height:1.6; color:var(--ink-faint); text-align:left; }
+.disclaimer{ margin-top:0; padding-top:20px; border-top:1px solid var(--line); font-size:11px; line-height:1.6; color:var(--ink-faint); text-align:left; }
+.disclaimer .d-es{ display:block; font-style:italic; opacity:0.75; margin-top:6px; }
 
 /* ---------- Fields ---------- */
 .field{ margin-bottom:16px; }
-.field label{ display:block; font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px; }
+.field label{ display:block; font-size:12px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:2px; }
+.field .label-es{ display:block; font-size:10px; font-weight:400; text-transform:none; letter-spacing:0; font-style:italic; color:var(--ink-faint); opacity:0.75; margin-bottom:8px; }
 .field input, .field textarea{ width:100%; background:var(--surface); border:1px solid var(--line-strong); border-radius:var(--radius); padding:14px 16px; font-family:var(--sans); font-size:15.5px; color:var(--ink); }
 .field input:focus, .field textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
 .field textarea{ resize:vertical; min-height:120px; }
-.consent{ font-size:11.5px; line-height:1.6; color:var(--ink-faint); margin-top:6px; }
+.consent{ font-size:11px; line-height:1.6; color:var(--ink-faint); margin-top:6px; }
+.consent .c-es{ display:block; font-style:italic; opacity:0.75; margin-top:6px; }
 
 /* ---------- Thank you ---------- */
 .thankyou{ padding-top:60px; text-align:center; }
 </style>
 <!-- ============================================================
      META (FACEBOOK) PIXEL — base tracking code
-     ------------------------------------------------------------
      Same shared pixel/dataset as employment and PI.
      ============================================================ -->
 <script>
@@ -197,33 +212,44 @@ src="https://www.facebook.com/tr?id=1356237486653789&ev=PageView&noscript=1"
 /* ============================================================
    DATA MODEL
    ------------------------------------------------------------
-   California workers' compensation is a NO-FAULT system — this
-   is the single biggest structural difference from the PI
-   build. There is no "liability" or "insurance" question here,
-   because fault doesn't determine eligibility the way it does
-   in a negligence claim. Instead, the real gating questions
-   are: were you an employee, did you notify your employer in
-   time, and what's the actual status of your claim (filed,
-   accepted, disputed, denied) — those are the facts that
-   actually predict whether someone needs an attorney.
+   Every piece of user-facing text is an { en, es } pair. The
+   `bi()` family of render helpers below is what actually stacks
+   English + Spanish on screen — see those functions for the
+   display logic. This keeps the bilingual requirement out of
+   the content itself (so translations are easy to review/edit
+   as plain data) and centralized in rendering (so the visual
+   treatment stays consistent everywhere).
+
+   NO-FAULT SYSTEM NOTE: same as before — no liability/insurance
+   questions, since fault doesn't determine eligibility here.
 
    >>> POINT VALUES BELOW ARE PLACEHOLDERS <<<
-   Same caveat as employment and PI: rough, order-of-magnitude
-   estimates for prototyping the mechanism only. Needs real
-   case-value judgment from whoever ends up handling these
-   leads before this goes live.
+   Same caveat as employment and PI — rough estimates for
+   prototyping the mechanism, need real case-value review before
+   launch. Tier dollar figures were deliberately scaled down from
+   the employment/PI ranges to reflect realistic CA workers' comp
+   settlement sizes.
+
+   >>> SPANISH TRANSLATIONS ARE A FIRST DRAFT <<<
+   These are clean, natural, formal-register translations, but
+   they have NOT been reviewed by a native-speaking attorney or
+   professional translator. Given real people will make legal
+   decisions partly based on reading this, get a fluent Spanish
+   speaker (ideally the attorney handling these leads) to proof
+   every string before this goes live — small translation errors
+   in a legal context can genuinely mislead someone.
    ============================================================ */
 
 const TIERS = [
-  { label: 'Low five figures',   floor: 5000,     ceiling: 15000   },
-  { label: 'Mid five figures',   floor: 15000,    ceiling: 30000   },
-  { label: 'High five figures',  floor: 30000,    ceiling: 50000   },
-  { label: 'Low six figures',    floor: 50000,    ceiling: 100000  },
-  { label: 'Mid six figures',    floor: 100000,   ceiling: 180000  },
-  { label: 'High six figures',   floor: 180000,   ceiling: 300000  },
-  { label: 'Low seven figures',  floor: 300000,   ceiling: 600000  },
-  { label: 'Mid seven figures',  floor: 600000,   ceiling: 1200000 },
-  { label: 'High seven figures', floor: 1200000,  ceiling: null    },
+  { label: 'Low five figures',   labelEs: 'Cinco cifras bajas',   floor: 5000,     ceiling: 15000   },
+  { label: 'Mid five figures',   labelEs: 'Cinco cifras medias',  floor: 15000,    ceiling: 30000   },
+  { label: 'High five figures',  labelEs: 'Cinco cifras altas',   floor: 30000,    ceiling: 50000   },
+  { label: 'Low six figures',    labelEs: 'Seis cifras bajas',    floor: 50000,    ceiling: 100000  },
+  { label: 'Mid six figures',    labelEs: 'Seis cifras medias',   floor: 100000,   ceiling: 180000  },
+  { label: 'High six figures',   labelEs: 'Seis cifras altas',    floor: 180000,   ceiling: 300000  },
+  { label: 'Low seven figures',  labelEs: 'Siete cifras bajas',   floor: 300000,   ceiling: 600000  },
+  { label: 'Mid seven figures',  labelEs: 'Siete cifras medias',  floor: 600000,   ceiling: 1200000 },
+  { label: 'High seven figures', labelEs: 'Siete cifras altas',   floor: 1200000,  ceiling: null    },
 ];
 function tierDisplayValue(tier){
   if (tier.ceiling == null) return '$' + tier.floor.toLocaleString('en-US') + '+';
@@ -231,79 +257,69 @@ function tierDisplayValue(tier){
   return '$' + mid.toLocaleString('en-US');
 }
 
-// ---- Issue type (single-select — drives wording of the
-// timing/deadline question below) -------------------------------
 const ISSUE_TYPES = [
-  { key: 'injury', label: 'Injured on the Job', sub: 'A specific incident — fall, strain, accident, etc.' },
-  { key: 'cumulative', label: 'Repetitive Strain or Occupational Illness', sub: 'Developed gradually over time on the job' },
-  { key: 'denied', label: 'My Claim Was Denied or Delayed', sub: 'Already filed, now being disputed' },
-  { key: 'retaliation', label: 'Retaliated Against for Filing a Claim', sub: 'Fired, demoted, or punished afterward' },
+  { key: 'injury', label: 'Injured on the Job', labelEs: 'Lesionado en el Trabajo', sub: 'A specific incident — fall, strain, accident, etc.', subEs: 'Un incidente específico — caída, esguince, accidente, etc.' },
+  { key: 'cumulative', label: 'Repetitive Strain or Occupational Illness', labelEs: 'Lesión por Esfuerzo Repetitivo o Enfermedad Laboral', sub: 'Developed gradually over time on the job', subEs: 'Se desarrolló gradualmente con el tiempo en el trabajo' },
+  { key: 'denied', label: 'My Claim Was Denied or Delayed', labelEs: 'Mi Reclamo Fue Negado o Retrasado', sub: 'Already filed, now being disputed', subEs: 'Ya presentado, ahora en disputa' },
+  { key: 'retaliation', label: 'Retaliated Against for Filing a Claim', labelEs: 'Represalias por Presentar un Reclamo', sub: 'Fired, demoted, or punished afterward', subEs: 'Despedido, degradado o castigado después' },
 ];
 
-// ---- Gate questions -----------------------------------------
 const Q_REPRESENTED = {
   id: 'represented',
-  section: 'Eligibility',
+  section: 'Eligibility', sectionEs: 'Elegibilidad',
   title: 'Are you currently working with a lawyer on this matter?',
+  titleEs: '¿Actualmente está trabajando con un abogado en este asunto?',
   sub: 'Just so we route you correctly — no wrong answer here.',
+  subEs: 'Solo para dirigirlo correctamente — no hay respuesta incorrecta aquí.',
   options: [
-    { label: 'No, not yet', pts: 0 },
-    { label: 'Yes, I already have a lawyer', pts: 0, hardstop: 'represented' },
+    { label: 'No, not yet', labelEs: 'No, todavía no', pts: 0 },
+    { label: 'Yes, I already have a lawyer', labelEs: 'Sí, ya tengo un abogado', pts: 0, hardstop: 'represented' },
   ],
 };
 
-// Employee status matters because workers' comp only covers
-// employees, not independent contractors — but misclassification
-// (being labeled a "contractor" while functionally treated as an
-// employee) is a real and common issue, so "no" is a scored
-// signal, not an automatic hard stop.
 const Q_EMPLOYEE_STATUS = {
   id: 'employeeStatus',
-  section: 'Eligibility',
+  section: 'Eligibility', sectionEs: 'Elegibilidad',
   title: 'Were you a W-2 employee at the company?',
+  titleEs: '¿Era usted empleado W-2 en la empresa?',
   sub: 'Even if you were told you\u2019re a contractor, it\u2019s worth checking — many workers are misclassified.',
+  subEs: 'Incluso si le dijeron que es contratista, vale la pena verificarlo — muchos trabajadores están mal clasificados.',
   options: [
-    { label: 'Yes', pts: 4 },
-    { label: 'No, I was told I\u2019m a contractor', pts: 2 },
-    { label: "Not sure", pts: 2, notSure: true },
+    { label: 'Yes', labelEs: 'Sí', pts: 4 },
+    { label: 'No, I was told I\u2019m a contractor', labelEs: 'No, me dijeron que soy contratista', pts: 2 },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 2, notSure: true },
   ],
 };
 
 const Q_STILL_EMPLOYED = {
   id: 'stillEmployed',
-  section: 'Eligibility',
+  section: 'Eligibility', sectionEs: 'Elegibilidad',
   title: 'Are you still employed there?',
-  sub: '',
+  titleEs: '¿Todavía trabaja allí?',
+  sub: '', subEs: '',
   options: [
-    { label: 'Yes', pts: 2 },
-    { label: 'No', pts: 3 },
+    { label: 'Yes', labelEs: 'Sí', pts: 2 },
+    { label: 'No', labelEs: 'No', pts: 3 },
   ],
 };
 
-// Dynamic timing/deadline question — wording changes by issue
-// type, since the relevant clock differs:
-//   - Acute injury: California generally requires notifying your
-//     employer within 30 days (Labor Code 5400), and filing
-//     within 1 year (Labor Code 5405).
-//   - Cumulative trauma: the 1-year clock generally runs from
-//     when you first knew or should have known the condition was
-//     work-related, not from a single incident date.
-//   - Denied/delayed claim: appeal deadlines are shorter and
-//     stricter once a denial letter is issued.
-//   - Retaliation: Labor Code 132a retaliation claims also
-//     generally run on a 1-year clock from the retaliatory act.
+// Dynamic timing question — wording changes by issue type. See
+// original build notes: CA notice/filing deadlines genuinely
+// differ by claim type (Labor Code 5400, 5405, 132a).
 function buildTimingQuestion(issueType){
-  const base = { id: 'timing', section: 'Eligibility' };
+  const base = { id: 'timing', section: 'Eligibility', sectionEs: 'Elegibilidad' };
   if (issueType === 'cumulative'){
     return {
       ...base,
       title: 'When did you first believe the condition was caused by your job?',
+      titleEs: '¿Cuándo creyó por primera vez que la condición fue causada por su trabajo?',
       sub: 'California generally requires filing within 1 year of that realization.',
+      subEs: 'California generalmente requiere presentar el reclamo dentro de 1 año de esa realización.',
       options: [
-        { label: 'Within the last month', pts: 4 },
-        { label: '1–6 months ago', pts: 3 },
-        { label: '6 months to 1 year ago', pts: 2 },
-        { label: 'More than 1 year ago', pts: 0, hardstop: 'timing' },
+        { label: 'Within the last month', labelEs: 'En el último mes', pts: 4 },
+        { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
+        { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 2 },
+        { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
       ],
     };
   }
@@ -311,12 +327,14 @@ function buildTimingQuestion(issueType){
     return {
       ...base,
       title: 'When was your claim denied or delayed?',
+      titleEs: '¿Cuándo fue negado o retrasado su reclamo?',
       sub: 'Appeal deadlines are often shorter once a denial letter is issued.',
+      subEs: 'Los plazos de apelación suelen ser más cortos una vez emitida la carta de negación.',
       options: [
-        { label: 'Within the last month', pts: 4 },
-        { label: '1–6 months ago', pts: 3 },
-        { label: '6 months to 1 year ago', pts: 1 },
-        { label: 'More than 1 year ago', pts: 0, hardstop: 'timing' },
+        { label: 'Within the last month', labelEs: 'En el último mes', pts: 4 },
+        { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
+        { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 1 },
+        { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
       ],
     };
   }
@@ -324,176 +342,215 @@ function buildTimingQuestion(issueType){
     return {
       ...base,
       title: 'When did the retaliation happen?',
+      titleEs: '¿Cuándo ocurrieron las represalias?',
       sub: 'For example, being fired, demoted, or disciplined after filing.',
+      subEs: 'Por ejemplo, ser despedido, degradado o disciplinado después de presentar el reclamo.',
       options: [
-        { label: 'Within the last month', pts: 4 },
-        { label: '1–6 months ago', pts: 3 },
-        { label: '6 months to 1 year ago', pts: 2 },
-        { label: 'More than 1 year ago', pts: 0, hardstop: 'timing' },
+        { label: 'Within the last month', labelEs: 'En el último mes', pts: 4 },
+        { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
+        { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 2 },
+        { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
       ],
     };
   }
-  // 'injury' (default) — acute, specific incident
   return {
     ...base,
     title: 'When did the injury happen?',
+    titleEs: '¿Cuándo ocurrió la lesión?',
     sub: 'California generally requires notifying your employer within 30 days and filing within 1 year.',
+    subEs: 'California generalmente requiere notificar a su empleador dentro de 30 días y presentar el reclamo dentro de 1 año.',
     options: [
-      { label: 'Within the last 30 days', pts: 4 },
-      { label: '1–6 months ago', pts: 3 },
-      { label: '6 months to 1 year ago', pts: 2 },
-      { label: 'More than 1 year ago', pts: 0, hardstop: 'timing' },
+      { label: 'Within the last 30 days', labelEs: 'En los últimos 30 días', pts: 4 },
+      { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
+      { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 2 },
+      { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
     ],
   };
 }
 
-// Employer notification — a real requirement (30-day rule), but
-// missing it doesn't automatically end a claim (good-cause
-// exceptions exist), so this stays scored, not a hard stop.
+// NEW — exact date of injury/discovery/denial/retaliation.
+// Added right after the timing-range gate: the range question
+// above is what's easy for a visitor to answer quickly and what
+// drives the SOL gate, but the attorney needs an actual date to
+// confirm deadlines precisely, not just a bucket. This is a
+// free date-input question, not tap-to-select — see the
+// `type: 'date'` branch in renderQuestion(). It's excluded from
+// scoring entirely (see computeResult — questions without an
+// `options` array are skipped).
+function buildDateQuestion(issueType){
+  const base = { id: 'injuryDate', type: 'date', section: 'Eligibility', sectionEs: 'Elegibilidad',
+    sub: 'This helps the attorney confirm exact deadlines — it doesn\u2019t change your estimate.',
+    subEs: 'Esto ayuda al abogado a confirmar los plazos exactos — no cambia su estimado.' };
+  if (issueType === 'cumulative'){
+    return { ...base, title: 'What date did you first believe this was work-related?', titleEs: '¿En qué fecha creyó por primera vez que esto estaba relacionado con el trabajo?' };
+  }
+  if (issueType === 'denied'){
+    return { ...base, title: 'What date was your claim denied or delayed?', titleEs: '¿En qué fecha fue negado o retrasado su reclamo?' };
+  }
+  if (issueType === 'retaliation'){
+    return { ...base, title: 'What date did the retaliation happen?', titleEs: '¿En qué fecha ocurrieron las represalias?' };
+  }
+  return { ...base, title: 'What was the exact date of the injury?', titleEs: '¿Cuál fue la fecha exacta de la lesión?' };
+}
+
 const Q_NOTIFIED = {
   id: 'notified',
-  section: 'Claim Status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
   title: 'Did you tell your employer about this?',
-  sub: '',
+  titleEs: '¿Le informó a su empleador sobre esto?',
+  sub: '', subEs: '',
   options: [
-    { label: 'Yes, right away', pts: 4 },
-    { label: 'Yes, but later than I probably should have', pts: 2 },
-    { label: 'No, not yet', pts: 1 },
-    { label: "Not sure", pts: 1, notSure: true },
+    { label: 'Yes, right away', labelEs: 'Sí, de inmediato', pts: 4 },
+    { label: 'Yes, but later than I probably should have', labelEs: 'Sí, pero más tarde de lo que probablemente debí', pts: 2 },
+    { label: 'No, not yet', labelEs: 'No, todavía no', pts: 1 },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
   ],
 };
 
 const Q_DWC1 = {
   id: 'dwc1',
-  section: 'Claim Status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
   title: 'Did you fill out a DWC-1 claim form?',
+  titleEs: '¿Completó un formulario de reclamo DWC-1?',
   sub: 'This is the specific form that formally starts a workers\u2019 comp claim — separate from just telling your employer.',
+  subEs: 'Este es el formulario específico que inicia formalmente un reclamo de compensación laboral — es distinto de solo avisarle a su empleador.',
   options: [
-    { label: 'Yes', pts: 3 },
-    { label: 'No', pts: 2 },
-    { label: "Not sure", pts: 1, notSure: true },
+    { label: 'Yes', labelEs: 'Sí', pts: 3 },
+    { label: 'No', labelEs: 'No', pts: 2 },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
   ],
 };
 
 const Q_CLAIM_STATUS = {
   id: 'claimStatus',
-  section: 'Claim Status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
   title: "What's the status of your workers' comp claim?",
-  sub: '',
+  titleEs: '¿Cuál es el estado de su reclamo de compensación laboral?',
+  sub: '', subEs: '',
   options: [
-    { label: "Haven't filed a claim yet", pts: 2 },
-    { label: 'Filed and pending', pts: 3 },
-    { label: 'Filed and accepted, but something\u2019s being disputed', pts: 4 },
-    { label: 'Filed and fully denied', pts: 4 },
+    { label: "Haven't filed a claim yet", labelEs: 'Todavía no he presentado un reclamo', pts: 2 },
+    { label: 'Filed and pending', labelEs: 'Presentado y pendiente', pts: 3 },
+    { label: 'Filed and accepted, but something\u2019s being disputed', labelEs: 'Presentado y aceptado, pero algo está en disputa', pts: 4 },
+    { label: 'Filed and fully denied', labelEs: 'Presentado y completamente negado', pts: 4 },
   ],
 };
 
 const Q_MAIN_ISSUE = {
   id: 'mainIssue',
-  section: 'Claim Status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
   title: 'What\u2019s the main problem right now?',
-  sub: '',
+  titleEs: '¿Cuál es el problema principal en este momento?',
+  sub: '', subEs: '',
   options: [
-    { label: 'My claim was denied', pts: 4 },
-    { label: 'I haven\u2019t received any medical treatment', pts: 3 },
-    { label: 'Treatment is being denied or delayed', pts: 4 },
-    { label: 'I\u2019m not getting paid for missed work', pts: 4 },
-    { label: 'Employer says it\u2019s not work-related', pts: 4 },
-    { label: 'I haven\u2019t filed a claim yet', pts: 2 },
-    { label: "Not sure", pts: 1, notSure: true },
+    { label: 'My claim was denied', labelEs: 'Mi reclamo fue negado', pts: 4 },
+    { label: 'I haven\u2019t received any medical treatment', labelEs: 'No he recibido ningún tratamiento médico', pts: 3 },
+    { label: 'Treatment is being denied or delayed', labelEs: 'El tratamiento está siendo negado o retrasado', pts: 4 },
+    { label: 'I\u2019m not getting paid for missed work', labelEs: 'No me están pagando por el trabajo perdido', pts: 4 },
+    { label: 'Employer says it\u2019s not work-related', labelEs: 'El empleador dice que no está relacionado con el trabajo', pts: 4 },
+    { label: 'I haven\u2019t filed a claim yet', labelEs: 'Todavía no he presentado un reclamo', pts: 2 },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
   ],
 };
 
 const Q_DEADLINE = {
   id: 'deadline',
-  section: 'Claim Status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
   title: 'Do you have a hearing, medical exam, or other deadline coming up?',
+  titleEs: '¿Tiene una audiencia, examen médico u otro plazo próximo?',
   sub: 'For example, a QME appointment or a scheduled hearing date.',
+  subEs: 'Por ejemplo, una cita de QME o una fecha de audiencia programada.',
   options: [
-    { label: 'Yes', pts: 4 },
-    { label: 'No', pts: 2 },
-    { label: "Not sure", pts: 1, notSure: true },
+    { label: 'Yes', labelEs: 'Sí', pts: 4 },
+    { label: 'No', labelEs: 'No', pts: 2 },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
   ],
 };
 
 const Q_RETALIATION_ACTION = {
   id: 'retaliationAction',
-  section: 'Claim Status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
   title: 'What happened after you filed your claim?',
-  sub: '',
+  titleEs: '¿Qué pasó después de presentar su reclamo?',
+  sub: '', subEs: '',
   options: [
-    { label: 'I was fired', pts: 4 },
-    { label: 'I was demoted or had hours cut', pts: 3 },
-    { label: 'I started being treated differently', pts: 2 },
-    { label: "Not sure", pts: 1, notSure: true },
+    { label: 'I was fired', labelEs: 'Me despidieron', pts: 4 },
+    { label: 'I was demoted or had hours cut', labelEs: 'Me degradaron o me redujeron las horas', pts: 3 },
+    { label: 'I started being treated differently', labelEs: 'Empezaron a tratarme diferente', pts: 2 },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
   ],
 };
 
 const Q_BODY_PART = {
   id: 'bodyPart',
-  section: 'Injury',
+  section: 'Injury', sectionEs: 'Lesión',
   title: 'What\u2019s the main body part or area affected?',
-  sub: '',
+  titleEs: '¿Cuál es la parte del cuerpo o área principal afectada?',
+  sub: '', subEs: '',
   options: [
-    { label: 'Back or neck', pts: 3 },
-    { label: 'Shoulder or arm', pts: 3 },
-    { label: 'Wrist or hand', pts: 2 },
-    { label: 'Knee, leg, or foot', pts: 3 },
-    { label: 'Head or neurological', pts: 4 },
-    { label: 'Stress or psychological', pts: 3 },
-    { label: 'Other or multiple areas', pts: 3 },
+    { label: 'Back or neck', labelEs: 'Espalda o cuello', pts: 3 },
+    { label: 'Shoulder or arm', labelEs: 'Hombro o brazo', pts: 3 },
+    { label: 'Wrist or hand', labelEs: 'Muñeca o mano', pts: 2 },
+    { label: 'Knee, leg, or foot', labelEs: 'Rodilla, pierna o pie', pts: 3 },
+    { label: 'Head or neurological', labelEs: 'Cabeza o neurológico', pts: 4 },
+    { label: 'Stress or psychological', labelEs: 'Estrés o psicológico', pts: 3 },
+    { label: 'Other or multiple areas', labelEs: 'Otra o múltiples áreas', pts: 3 },
   ],
 };
 
 const Q_SEVERITY = {
   id: 'severity',
-  section: 'Injury',
+  section: 'Injury', sectionEs: 'Lesión',
   title: 'How would you describe your injury or condition?',
-  sub: '',
+  titleEs: '¿Cómo describiría su lesión o condición?',
+  sub: '', subEs: '',
   options: [
-    { label: 'Minor — resolved quickly', pts: 1 },
-    { label: 'Moderate — required real treatment', pts: 2 },
-    { label: 'Severe — significant, lasting impact', pts: 4 },
-    { label: 'Catastrophic — permanent or life-altering', pts: 4 },
+    { label: 'Minor — resolved quickly', labelEs: 'Leve — se resolvió rápidamente', pts: 1 },
+    { label: 'Moderate — required real treatment', labelEs: 'Moderada — requirió tratamiento real', pts: 2 },
+    { label: 'Severe — significant, lasting impact', labelEs: 'Grave — impacto significativo y duradero', pts: 4 },
+    { label: 'Catastrophic — permanent or life-altering', labelEs: 'Catastrófica — permanente o que cambia la vida', pts: 4 },
   ],
 };
 
 const Q_TREATMENT = {
   id: 'treatment',
-  section: 'Injury',
+  section: 'Injury', sectionEs: 'Lesión',
   title: 'Are you still receiving treatment?',
-  sub: '',
+  titleEs: '¿Todavía está recibiendo tratamiento?',
+  sub: '', subEs: '',
   options: [
-    { label: 'Yes, ongoing treatment', pts: 3 },
-    { label: 'No, treatment is complete', pts: 2 },
-    { label: "Haven't started treatment yet", pts: 1 },
+    { label: 'Yes, ongoing treatment', labelEs: 'Sí, tratamiento continuo', pts: 3 },
+    { label: 'No, treatment is complete', labelEs: 'No, el tratamiento ha terminado', pts: 2 },
+    { label: "Haven't started treatment yet", labelEs: 'Todavía no he comenzado el tratamiento', pts: 1 },
   ],
 };
 
 const Q_WORK_ABILITY = {
   id: 'workAbility',
-  section: 'Injury',
+  section: 'Injury', sectionEs: 'Lesión',
   title: 'What\u2019s your work status now?',
-  sub: '',
+  titleEs: '¿Cuál es su situación laboral actual?',
+  sub: '', subEs: '',
   options: [
-    { label: 'Currently off work because of this', pts: 4 },
-    { label: 'Working, but with restrictions', pts: 3 },
-    { label: 'Working full duty now, but missed time before', pts: 2 },
-    { label: 'Working full duty, never missed time', pts: 1 },
-    { label: "Not sure yet", pts: 2, notSure: true },
+    { label: 'Currently off work because of this', labelEs: 'Actualmente sin trabajar por esto', pts: 4 },
+    { label: 'Working, but with restrictions', labelEs: 'Trabajando, pero con restricciones', pts: 3 },
+    { label: 'Working full duty now, but missed time before', labelEs: 'Trabajando tiempo completo ahora, pero perdí tiempo antes', pts: 2 },
+    { label: 'Working full duty, never missed time', labelEs: 'Trabajando tiempo completo, nunca perdí tiempo', pts: 1 },
+    { label: "Not sure yet", labelEs: 'Todavía no estoy seguro/a', pts: 2, notSure: true },
   ],
 };
 
 const Q_DOCUMENTATION = {
   id: 'documentation',
-  section: 'Documentation',
+  section: 'Documentation', sectionEs: 'Documentación',
   title: 'Do you have documentation of your injury or claim?',
+  titleEs: '¿Tiene documentación de su lesión o reclamo?',
   sub: 'Incident report, medical records, claim paperwork, or witness info.',
+  subEs: 'Reporte de incidente, registros médicos, documentos del reclamo o información de testigos.',
   options: [
-    { label: 'Yes, several things saved', pts: 4 },
-    { label: 'Yes, a little', pts: 2 },
-    { label: 'No documentation', pts: 0 },
-    { label: "Not sure / haven't checked", pts: 1, notSure: true },
+    { label: 'Yes, several things saved', labelEs: 'Sí, tengo varias cosas guardadas', pts: 4 },
+    { label: 'Yes, a little', labelEs: 'Sí, un poco', pts: 2 },
+    { label: 'No documentation', labelEs: 'Sin documentación', pts: 0 },
+    { label: "Not sure / haven't checked", labelEs: 'No estoy seguro/a / no he revisado', pts: 1, notSure: true },
   ],
 };
 
@@ -538,6 +595,7 @@ function buildSteps(){
     Q_EMPLOYEE_STATUS,
     Q_STILL_EMPLOYED,
     buildTimingQuestion(state.issueType),
+    buildDateQuestion(state.issueType), // <-- new, right after the timing range question
     Q_NOTIFIED,
     Q_DWC1,
     Q_CLAIM_STATUS,
@@ -591,23 +649,13 @@ function goBack(){
 function computeResult(){
   let score = 0, max = 0;
   state.steps.forEach(q => {
+    if (!q.options) return; // date-input questions aren't scored
     const chosen = state.answers[q.id];
     const best = Math.max(...q.options.map(o => o.pts));
     max += best;
     if (chosen) score += chosen.pts;
   });
   const pct = max > 0 ? score / max : 0;
-  // Same skew mechanism as employment/PI. Placeholder value —
-  // tune against real test answers once this is live, same way
-  // the other two verticals were calibrated.
-  // >>> TUNABLE, PLACEHOLDER <<<
-  // Same mechanism as employment and PI. Bumped higher than the
-  // original 2.0 after adding several more scored questions
-  // (still-employed, DWC-1, main issue, deadline, body part) —
-  // more questions with generally moderate-to-high point values
-  // pushed typical raw percentages up further, so the curve
-  // needed to pull harder to keep ordinary answer combinations
-  // landing in realistic, more modest tiers.
   const SKEW = 2.6;
   const skewedPct = Math.pow(pct, SKEW);
   const tierIndex = Math.min(TIERS.length - 1, Math.floor(skewedPct * TIERS.length));
@@ -622,6 +670,15 @@ function computeResult(){
 function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
 function appendAll(container, html){ const t = document.createElement('template'); t.innerHTML = html.trim(); container.append(...t.content.childNodes); }
 
+// ---- Bilingual helpers -----------------------------------------
+// Centralizes the "English on top, Spanish smaller below" display
+// pattern so every screen renders it identically.
+function biBlock(en, es, enTag, enClass, esClass, enStyle){
+  const styleAttr = enStyle ? ` style="${enStyle}"` : '';
+  if (!es) return `<${enTag} class="${enClass}"${styleAttr}>${en}</${enTag}>`;
+  return `<${enTag} class="${enClass}"${styleAttr}>${en}</${enTag}><div class="${esClass}">${es}</div>`;
+}
+
 function progressBar(){
   if (!state.steps.length) return '';
   const total = state.steps.length;
@@ -630,7 +687,7 @@ function progressBar(){
     const cls = i < state.stepIndex ? 'done' : (i === state.stepIndex ? 'current' : '');
     ticks += `<span class="${cls}"></span>`;
   }
-  return `<div class="progress-rules">${ticks}</div><div class="step-label">Step ${state.stepIndex + 1} of ${total}</div>`;
+  return `<div class="progress-rules">${ticks}</div><div class="step-label">Step ${state.stepIndex + 1} of ${total} · Paso ${state.stepIndex + 1} de ${total}</div>`;
 }
 
 function render(){
@@ -650,7 +707,8 @@ function renderCategory(app){
       <div class="readout" id="readout" style="font-size:24px;">
         <span class="digit">$</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span><span class="digit">,</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span>
       </div>
-      <div class="readout-label" style="margin-bottom:6px;">Your estimate appears here when you're done</div>
+      <div class="readout-label">Your estimate appears here when you're done</div>
+      <div class="readout-label-es" style="margin-bottom:6px;">Su estimado aparecerá aquí cuando termine</div>
     </div>
   `);
   app.appendChild(header);
@@ -658,8 +716,8 @@ function renderCategory(app){
   const content = el(`
     <div class="content">
       <div class="eyebrow">Step 1 · California</div>
-      <h1 class="q">What's going on with your claim?</h1>
-      <p class="sub">Select the one that best fits. Free, with no obligation.</p>
+      ${biBlock("What's going on with your claim?", '¿Qué está pasando con su reclamo?', 'h1', 'q', 'q-es')}
+      ${biBlock('Select the one that best fits. Free, with no obligation.', 'Seleccione la opción que mejor se ajuste. Gratis, sin compromiso.', 'p', 'sub', 'sub-es')}
       <div class="options" id="cat-options"></div>
     </div>
   `);
@@ -670,7 +728,7 @@ function renderCategory(app){
     const selected = state.issueType === t.key;
     const btn = el(`
       <button class="opt ${selected ? 'selected' : ''}">
-        <span>${t.label}<br><span class="sub-note">${t.sub}</span></span>
+        <span>${t.label}<span class="opt-es">${t.labelEs}</span><span class="sub-note">${t.sub}</span></span>
         <span class="check"></span>
       </button>
     `);
@@ -714,40 +772,73 @@ function renderQuestion(app){
 
   const content = el(`
     <div class="content">
-      <div class="eyebrow">${q.section}</div>
-      <h1 class="q">${q.title}</h1>
-      ${q.sub ? `<p class="sub">${q.sub}</p>` : '<div style="height:26px;"></div>'}
-      <div class="options" id="q-options"></div>
+      <div class="eyebrow">${q.section}${q.sectionEs ? ' · ' + q.sectionEs : ''}</div>
+      ${biBlock(q.title, q.titleEs, 'h1', 'q', 'q-es')}
+      ${q.sub ? biBlock(q.sub, q.subEs, 'p', 'sub', 'sub-es') : '<div style="height:14px;"></div>'}
+      <div id="q-body"></div>
     </div>
   `);
   app.appendChild(content);
 
-  const optWrap = content.querySelector('#q-options');
-  q.options.forEach(opt => {
-    const b = el(`
-      <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
-        <span>${opt.label}</span>
-        <span class="check"></span>
-      </button>
-    `);
-    b.onclick = () => selectOption(q, opt);
-    optWrap.appendChild(b);
-  });
+  const bodyWrap = content.querySelector('#q-body');
 
-  const footer = el(`<div class="footer"><button class="back-link" id="back">&larr; Back</button></div>`);
-  app.appendChild(footer);
+  if (q.type === 'date') {
+    // Free date-input question — not tap-to-select. Native
+    // HTML5 date picker keeps this simple with no extra library.
+    appendAll(bodyWrap, `
+      <div class="field">
+        <label for="q-date-input">Date · Fecha</label>
+        <input id="q-date-input" type="date">
+      </div>
+    `);
+  } else {
+    const optWrap = el('<div class="options"></div>');
+    q.options.forEach(opt => {
+      const b = el(`
+        <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
+          <span>${opt.label}<span class="opt-es">${opt.labelEs || ''}</span></span>
+          <span class="check"></span>
+        </button>
+      `);
+      b.onclick = () => selectOption(q, opt);
+      optWrap.appendChild(b);
+    });
+    bodyWrap.appendChild(optWrap);
+  }
+
+  const footerHtml = q.type === 'date'
+    ? `<div class="footer">
+         <button class="back-link" id="back">&larr; Back · Atrás</button>
+         <button class="btn btn-primary" id="date-continue">Continue<span class="btn-es">Continuar</span></button>
+       </div>`
+    : `<div class="footer"><button class="back-link" id="back">&larr; Back · Atrás</button></div>`;
+  appendAll(app, footerHtml);
   document.getElementById('back').onclick = goBack;
+
+  if (q.type === 'date') {
+    document.getElementById('date-continue').onclick = () => {
+      const val = document.getElementById('q-date-input').value;
+      // Not scored (see computeResult), so pts doesn't matter —
+      // stored purely so it shows up in the lead's full detail.
+      state.answers[q.id] = { label: val || 'Not provided', pts: 0 };
+      advance();
+    };
+  }
 }
 
 function renderStop(app){
   const copy = {
     represented: {
       h: 'Looks like you\u2019re already represented',
+      hEs: 'Parece que ya tiene representación',
       p: 'Since you\u2019re already working with a lawyer on this matter, we\u2019re not able to take this further — your existing attorney is the right person to advise you.',
+      pEs: 'Como ya está trabajando con un abogado en este asunto, no podemos continuar — su abogado actual es la persona indicada para asesorarlo.',
     },
     timing: {
       h: 'This may be outside the filing window',
+      hEs: 'Esto podría estar fuera del plazo de presentación',
       p: 'California workers\u2019 comp claims generally must be filed within 1 year. Based on your answer, this may fall outside that window — but exceptions can apply (for example, if benefits are still being paid), so it\u2019s still worth a quick call with an attorney to confirm.',
+      pEs: 'Los reclamos de compensación laboral en California generalmente deben presentarse dentro de 1 año. Según su respuesta, esto podría estar fuera de ese plazo — pero pueden aplicar excepciones (por ejemplo, si todavía se están pagando beneficios), así que vale la pena una llamada rápida con un abogado para confirmar.',
     },
   };
   const c = copy[state.hardstopReason] || copy.represented;
@@ -755,10 +846,12 @@ function renderStop(app){
     <div class="content stop">
       <div class="seal">§</div>
       <h1>${c.h}</h1>
+      <div class="h-es">${c.hEs}</div>
       <p>${c.p}</p>
+      <div class="p-es">${c.pEs}</div>
     </div>
     <div class="footer">
-      <button class="btn btn-ghost" id="restart">Start over</button>
+      <button class="btn btn-ghost" id="restart">Start over<span class="btn-es">Empezar de nuevo</span></button>
     </div>
   `);
   document.getElementById('restart').onclick = resetState;
@@ -769,44 +862,54 @@ function renderReveal(app){
   const target = tierDisplayValue(tier);
   appendAll(app, `
     <div class="header"><div class="brand"><span class="mark">§</span> The Workers\u2019 Comp Calculator</div></div>
-    <div class="content reveal" style="text-align:left; padding-top:18px; padding-bottom:8px;">
-      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">Your estimate</div>
-      <div class="readout" id="reveal-readout" style="font-size:44px; margin:2px 0 0 0;"></div>
-      <div class="readout-label" style="margin-bottom:10px;">${tier.label} · based on what you\u2019ve shared</div>
+    <div class="content reveal" style="text-align:left; padding-bottom:0; padding-top:20px;">
+      <div class="eyebrow" style="text-align:left; margin-bottom:1px;">Your estimate · Su estimado</div>
+      <div class="readout" id="reveal-readout" style="font-size:40px; margin:1px 0 0 0;"></div>
+      <div class="readout-label" style="margin-bottom:0;">${tier.label} · based on what you\u2019ve shared</div>
+      <div class="readout-label-es" style="margin-bottom:8px;">${tier.labelEs} · según lo que ha compartido</div>
 
-      <div class="eyebrow" style="margin-top:4px; text-align:center;">Have an attorney call you</div>
-      <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
-      <p class="sub" style="margin-bottom:12px; text-align:center;">Free, with no obligation. An attorney will call you within a business day.</p>
-      <div class="field">
+      <div class="eyebrow" style="margin-top:4px; margin-bottom:4px; text-align:center;">Have an attorney call you · Que un abogado lo llame</div>
+      ${biBlock('Where should they reach you?', '¿Dónde deberían contactarlo?', 'h1', 'q', 'q-es', 'font-size:20px; text-align:center; margin-bottom:1px;')}
+      <p class="sub" style="text-align:center; margin-bottom:0;">Free, with no obligation. An attorney will call you within a business day.</p>
+      <p class="sub-es" style="text-align:center; margin-bottom:12px;">Gratis, sin compromiso. Un abogado lo llamará dentro de un día hábil.</p>
+
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-name">Full name</label>
+        <span class="label-es">Nombre completo</span>
         <input id="f-name" type="text" placeholder="Jane Rivera" value="${state.contact.name}">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-phone">Phone number</label>
+        <span class="label-es">Número de teléfono</span>
         <input id="f-phone" type="tel" placeholder="(555) 555-5555" value="${state.contact.phone}">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-email">Email address</label>
+        <span class="label-es">Correo electrónico</span>
         <input id="f-email" type="email" placeholder="jane@email.com" value="${state.contact.email}">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
-        <textarea id="f-freetext" placeholder="Dates, names, or details in your own words — this doesn't change your estimate, it just helps the call go faster.">${state.freeText}</textarea>
+        <span class="label-es">¿Algo más que el abogado deba saber? (opcional)</span>
+        <textarea id="f-freetext" placeholder="Dates, names, or details in your own words. / Fechas, nombres o detalles en sus propias palabras." style="min-height:80px;">${state.freeText}</textarea>
       </div>
-      <!-- Honeypot — same bot-detection pattern as employment and PI -->
       <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
         <label for="f-website">Website</label>
         <input id="f-website" type="text" name="website" tabindex="-1" autocomplete="off">
       </div>
     </div>
-    <div class="footer" style="position:static; background:none; padding-top:4px;">
-      <button class="btn btn-primary" id="contact-submit">Submit</button>
-      <p class="consent" style="margin-top:2px;">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
-      <div class="disclaimer" style="text-align:left; margin-top:8px; border-top:1px solid var(--line); padding-top:16px;">
+    <div class="footer" style="position:static; background:none; padding-top:0;">
+      <button class="btn btn-primary" id="contact-submit">Submit<span class="btn-es">Enviar</span></button>
+      <p class="consent">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.
+        <span class="c-es">Al enviar, acepta ser contactado sobre su caso por teléfono, mensaje de texto o correo electrónico, incluso por medios automatizados, aunque su número esté en una lista de no llamar. El consentimiento no es necesario para usar este servicio. Usted acepta nuestros Términos y Política de Privacidad.</span>
+      </p>
+      <div class="disclaimer" style="margin-top:8px; border-top:1px solid var(--line); padding-top:16px;">
         This estimate is general and educational — it\u2019s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually be worth.
+        <span class="d-es">Este estimado es general y educativo — se basa en patrones de casos similares, no es una opinión legal sobre su situación específica. No es asesoría legal y no crea una relación abogado-cliente. Solo un abogado con licencia que revise su caso completo puede determinar lo que realmente podría valer.</span>
       </div>
-      <div class="disclaimer" style="text-align:left; margin-top:10px;">
+      <div class="disclaimer" style="margin-top:10px;">
         The estimate shown is not guaranteed and is not a final case value. Every case must be independently evaluated by a licensed attorney. By submitting this form, you agree to have your information shared with an attorney for review. Nothing on this site constitutes attorney advice.
+        <span class="d-es">El estimado mostrado no está garantizado y no es un valor final del caso. Cada caso debe ser evaluado independientemente por un abogado con licencia. Al enviar este formulario, usted acepta que su información sea compartida con un abogado para su revisión. Nada en este sitio constituye asesoría legal.</span>
       </div>
     </div>
   `);
@@ -819,13 +922,13 @@ function renderReveal(app){
     state.freeText = document.getElementById('f-freetext').value;
 
     if (!state.contact.name.trim() || (!state.contact.phone.trim() && !state.contact.email.trim())) {
-      submitBtn.textContent = 'Please add your name and phone or email';
-      setTimeout(() => { submitBtn.textContent = 'Submit'; }, 2200);
+      submitBtn.innerHTML = 'Please add your name and phone or email<span class="btn-es">Agregue su nombre y teléfono o correo</span>';
+      setTimeout(() => { submitBtn.innerHTML = 'Submit<span class="btn-es">Enviar</span>'; }, 2400);
       return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.innerHTML = 'Submitting...<span class="btn-es">Enviando...</span>';
 
     const eventId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('lead_' + Date.now() + '_' + Math.random().toString(36).slice(2));
 
@@ -839,7 +942,7 @@ function renderReveal(app){
     });
 
     const payload = {
-      vertical: 'WC', // Workers' Comp — same shared backend, tagged for the inbox
+      vertical: 'WC',
       name: state.contact.name,
       phone: state.contact.phone,
       email: state.contact.email,
@@ -848,7 +951,7 @@ function renderReveal(app){
       estimateDisplay: tierDisplayValue(TIERS[state.tierIndex]),
       freeText: state.freeText,
       answers,
-      website: document.getElementById('f-website').value, // honeypot
+      website: document.getElementById('f-website').value,
       elapsedMs: Date.now() - state.startTime,
       eventId,
       eventSourceUrl: window.location.href,
@@ -894,11 +997,13 @@ function renderThankYou(app){
   appendAll(app, `
     <div class="content thankyou">
       <div class="seal" style="margin:0 auto 26px auto;">✓</div>
-      <h1 style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:26px; margin:0 0 14px 0;">You're all set</h1>
-      <p style="font-size:14.5px; line-height:1.6; color:var(--ink-soft);">A workers\u2019 comp attorney will call you within one business day. In the meantime, keep any medical records, claim paperwork, or documents related to your situation somewhere safe.</p>
+      <h1 style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:26px; margin:0 0 2px 0;">You're all set</h1>
+      <div style="font-family:var(--sans); font-weight:500; font-size:16px; color:var(--ink-soft); margin:0 0 16px 0;">Todo listo</div>
+      <p style="font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 4px 0;">A workers\u2019 comp attorney will call you within one business day. In the meantime, keep any medical records, claim paperwork, or documents related to your situation somewhere safe.</p>
+      <p style="font-size:13px; line-height:1.6; color:var(--ink-faint); font-style:italic;">Un abogado de compensación laboral lo llamará dentro de un día hábil. Mientras tanto, guarde en un lugar seguro cualquier registro médico, documento del reclamo o papeles relacionados con su situación.</p>
     </div>
     <div class="footer">
-      <button class="btn btn-ghost" id="restart2">Start a new case check</button>
+      <button class="btn btn-ghost" id="restart2">Start a new case check<span class="btn-es">Iniciar una nueva evaluación</span></button>
     </div>
   `);
   document.getElementById('restart2').onclick = resetState;
