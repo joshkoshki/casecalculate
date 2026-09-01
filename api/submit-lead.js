@@ -129,6 +129,8 @@ const COLOR = {
   silver: rgb(0x8c / 255, 0x93 / 255, 0xa0 / 255), // PI secondary accent
   forest: rgb(0x24 / 255, 0x40 / 255, 0x2f / 255), // Workers' comp accent — matches /workerscomp
   bronze: rgb(0x9c / 255, 0x80 / 255, 0x46 / 255),  // Workers' comp secondary accent
+  mustard: rgb(0x8a / 255, 0x6d / 255, 0x1f / 255), // Lemon law accent — matches /lemon
+  charcoal: rgb(0x4a / 255, 0x40 / 255, 0x38 / 255), // Lemon law secondary accent
   ink: rgb(0x21 / 255, 0x1d / 255, 0x17 / 255),
   inkSoft: rgb(0x5b / 255, 0x56 / 255, 0x48 / 255),
   line: rgb(0xe6 / 255, 0xe0 / 255, 0xd2 / 255),
@@ -142,6 +144,7 @@ const COLOR = {
 const VERTICAL_BRANDING = {
   PI:      { pdfAccent: COLOR.silver, pdfLabel: 'P E R S O N A L   I N J U R Y   L E A D', emailColor: '#1F3350', emailLabel: 'Personal Injury Lead', subjectTag: '[PI] ' },
   WC:      { pdfAccent: COLOR.bronze, pdfLabel: 'W O R K E R S \u2019   C O M P   L E A D',    emailColor: '#24402F', emailLabel: 'Workers\u2019 Comp Lead',   subjectTag: '[WC] ' },
+  LL:      { pdfAccent: COLOR.charcoal, pdfLabel: 'L E M O N   L A W   L E A D',            emailColor: '#8A6D1F', emailLabel: 'Lemon Law Lead',       subjectTag: '[Lemon] ' },
   default: { pdfAccent: COLOR.gold,   pdfLabel: 'N E W   L E A D',                          emailColor: '#6E2332', emailLabel: 'New Lead',              subjectTag: '[Employment] ' },
 };
 function brandingFor(vertical){
