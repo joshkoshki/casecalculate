@@ -822,9 +822,86 @@ const TRACKS = {
       },
     ],
   },
+
+  // Wage and Hour Violations — a structurally different area of
+  // law from the other three tracks. This isn't about being
+  // treated unfairly for who you are or what you reported — it's
+  // about California's specific, numeric requirements for pay,
+  // breaks, and overtime (Labor Code §§ 226.7, 510, 2802, etc.),
+  // which apply to every employer regardless of size (no FEHA
+  // 5-employee gate, since that's a discrimination/retaliation-
+  // specific threshold). Questions here identify the violation
+  // type, how long it's been going on, and whether it's an
+  // isolated issue or a wider pattern (which matters a lot for
+  // case value, since wage claims often become class or PAGA
+  // actions when they affect a whole team, not just one person).
+  wage: {
+    label: 'Wage and Hour Violations',
+    questions: [
+      {
+        id: 'w_violationType',
+        title: 'What kind of wage issue applies?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Unpaid or miscalculated overtime', pts: 4 },
+          { label: 'Meal or rest break violations', pts: 3 },
+          { label: 'Worked off the clock (before/after shift, during breaks)', pts: 4 },
+          { label: 'Misclassified as exempt or as a contractor', pts: 4 },
+          { label: "Didn't receive my final paycheck on time", pts: 3 },
+          { label: 'Something else', pts: 2 },
+        ],
+      },
+      {
+        id: 'w_timing',
+        title: 'How long ago did this happen, or how long has it been going on?',
+        sub: 'California generally allows 3–4 years to bring a wage claim, depending on the type.',
+        multi: false,
+        options: [
+          { label: 'Within the last 6 months', pts: 4 },
+          { label: '6 months to 1 year ago', pts: 3 },
+          { label: '1–3 years', pts: 2 },
+          { label: 'More than 3 years ago', pts: 0, hardstop: 'w_timing' },
+        ],
+      },
+      {
+        id: 'w_frequency',
+        title: 'How often did this happen?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Occasionally', pts: 1 },
+          { label: 'Regularly — a few times a week', pts: 3 },
+          { label: 'Every shift or pay period', pts: 4 },
+        ],
+      },
+      {
+        id: 'w_stillEmployed',
+        title: 'Are you still working there?',
+        sub: '',
+        multi: false,
+        options: [
+          { label: 'Yes', pts: 2 },
+          { label: 'No', pts: 3 },
+        ],
+      },
+      {
+        id: 'w_scope',
+        title: 'Do you think this affected other coworkers too?',
+        sub: 'This matters a lot for how a case like this can be pursued.',
+        multi: false,
+        options: [
+          { label: 'Just me', pts: 1 },
+          { label: 'A few coworkers', pts: 3 },
+          { label: 'Most of my department or more', pts: 4 },
+          { label: "Not sure", pts: 1, notSure: true },
+        ],
+      },
+    ],
+  },
 };
 
-const CATEGORY_ORDER = ['discrimination', 'retaliation', 'harassment'];
+const CATEGORY_ORDER = ['discrimination', 'retaliation', 'harassment', 'wage'];
 
 // Tag every question with a `section` label. This is what
 // renders as the eyebrow above each question — it's the fix for
@@ -917,19 +994,22 @@ function selectOption(question, option){
   }
 
   if (option.hardstop === 'feha') {
-    // Discrimination/retaliation drop out, but harassment (no
-    // employee-count minimum under FEHA) can still proceed.
-    state.activeCategories = state.categories.filter(c => c === 'harassment');
+    // Discrimination/retaliation drop out, but harassment and
+    // wage-and-hour claims (neither has a FEHA employee-count
+    // minimum) can still proceed.
+    state.activeCategories = state.categories.filter(c => c === 'harassment' || c === 'wage');
     if (state.activeCategories.length === 0) {
       state.hardstopReason = 'feha';
       state.screen = 'stop';
       render();
       return;
     } else {
-      // Rebuild remaining steps around harassment-only track.
+      // Rebuild remaining steps around whichever non-FEHA
+      // categories are still active.
       const remainingIndex = state.stepIndex + 1;
       const alreadyAsked = state.steps.slice(0, remainingIndex);
-      const rebuilt = [...SHARED_QUESTIONS, ...TRACKS.harassment.questions];
+      const rebuiltTracks = CATEGORY_ORDER.filter(c => state.activeCategories.includes(c)).flatMap(c => TRACKS[c].questions);
+      const rebuilt = [...SHARED_QUESTIONS, ...rebuiltTracks];
       state.steps = [...alreadyAsked, ...rebuilt];
     }
   }
@@ -1051,11 +1131,12 @@ function renderCategory(app){
   app.appendChild(content);
 
   const optWrap = content.querySelector('#cat-options');
-  const labels = { discrimination: 'Discrimination', retaliation: 'Retaliation', harassment: 'Harassment' };
+  const labels = { discrimination: 'Discrimination', retaliation: 'Retaliation', harassment: 'Harassment', wage: 'Wage and Hour Violations' };
   const subs = {
     discrimination: 'Treated worse because of a protected trait',
     retaliation: 'Punished after reporting or opposing something',
     harassment: 'Subjected to unwelcome, hostile conduct',
+    wage: 'Unpaid overtime, missed breaks, or off-the-clock work',
   };
   CATEGORY_ORDER.forEach(cat => {
     const selected = state.categories.includes(cat);
@@ -1175,6 +1256,10 @@ function renderStop(app){
     feha: {
       h: 'This likely doesn\u2019t meet the minimum company size',
       p: 'California\u2019s discrimination and retaliation protections generally apply to employers with 5 or more employees. Based on your answer, this may not qualify — though other legal theories can sometimes still apply.',
+    },
+    w_timing: {
+      h: 'This may be outside the filing window',
+      p: 'California wage and hour claims generally must be brought within 3 to 4 years, depending on the type of claim. Based on your answer, this may fall outside that window — but exceptions exist, so it’s still worth a quick call with an attorney to confirm.',
     },
   };
   const c = copy[state.hardstopReason] || copy.represented;
