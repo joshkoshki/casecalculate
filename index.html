@@ -1282,26 +1282,26 @@ function renderReveal(app){
   appendAll(app, `
     <div class="header"><div class="brand"><span class="mark">§</span> Case Calculator</div></div>
     <div class="content reveal" style="text-align:left; padding-top:18px; padding-bottom:4px;">
-      <div class="eyebrow" style="text-align:left;">Your estimate</div>
+      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">Your estimate</div>
       <div class="readout" id="reveal-readout" style="font-size:44px; margin:4px 0 2px 0;"></div>
-      <div class="readout-label" style="margin-bottom:14px;">${tier.label} · based on what you\u2019ve shared</div>
+      <div class="readout-label" style="margin-bottom:10px;">${tier.label} · based on what you\u2019ve shared</div>
 
-      <div class="eyebrow" style="margin-top:10px; text-align:center;">Have a lawyer call you</div>
+      <div class="eyebrow" style="margin-top:4px; text-align:center;">Have a lawyer call you</div>
       <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
-      <p class="sub" style="margin-bottom:20px; text-align:center;">Free, with no obligation. A lawyer will call you within a business day.</p>
-      <div class="field">
+      <p class="sub" style="margin-bottom:12px; text-align:center;">Free, with no obligation. A lawyer will call you within a business day.</p>
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-name">Full name</label>
         <input id="f-name" type="text" placeholder="Jane Rivera" value="${state.contact.name}">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-phone">Phone number</label>
         <input id="f-phone" type="tel" placeholder="(555) 555-5555" value="${state.contact.phone}">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-email">Email address</label>
         <input id="f-email" type="email" placeholder="jane@email.com" value="${state.contact.email}">
       </div>
-      <div class="field">
+      <div class="field" style="margin-bottom:10px;">
         <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
         <textarea id="f-freetext" placeholder="Dates, names, or details in your own words — this doesn't change your estimate, it just helps the call go faster.">${state.freeText}</textarea>
       </div>
