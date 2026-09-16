@@ -292,209 +292,47 @@ const Q_EMPLOYEE_STATUS = {
   ],
 };
 
-const Q_STILL_EMPLOYED = {
-  id: 'stillEmployed',
+// Timing gate — simplified to one generic question rather than
+// four category-specific variants. California workers' comp
+// claims generally run on roughly a 1-year filing window
+// regardless of sub-type; the finer distinctions (cumulative-
+// trauma discovery date, appeal deadlines after a denial, etc.)
+// are exactly the kind of thing the attorney sorts out on the
+// actual call — the disclaimer already covers that this is
+// general/educational, not a precise legal determination.
+const Q_TIMING = {
+  id: 'timing',
   section: 'Eligibility', sectionEs: 'Elegibilidad',
-  title: 'Are you still employed there?',
-  titleEs: '¿Todavía trabaja allí?',
+  title: 'Did this happen within the last year?',
+  titleEs: '¿Esto ocurrió en el último año?',
+  sub: 'California generally requires filing a workers\u2019 comp claim within about 1 year.',
+  subEs: 'California generalmente requiere presentar un reclamo de compensación laboral dentro de aproximadamente 1 año.',
+  options: [
+    { label: 'Yes, within the last year', labelEs: 'Sí, en el último año', pts: 4 },
+    { label: 'No, more than a year ago', labelEs: 'No, hace más de un año', pts: 0, hardstop: 'timing' },
+    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 2, notSure: true },
+  ],
+};
+
+// Merged status question — replaces four separate questions
+// from the earlier, longer version of this flow (employer
+// notification, DWC-1 form, claim status, and the "main issue"
+// diagnostic). Reported-and-filed status is really one
+// underlying fact people can describe in a single answer, and
+// collapsing it here is what makes room to keep a real severity
+// question (see Q_SEVERITY below) while still hitting a 7-
+// question total.
+const Q_STATUS = {
+  id: 'status',
+  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
+  title: 'What\u2019s the status of your claim?',
+  titleEs: '¿Cuál es el estado de su reclamo?',
   sub: '', subEs: '',
   options: [
-    { label: 'Yes', labelEs: 'Sí', pts: 2 },
-    { label: 'No', labelEs: 'No', pts: 3 },
-  ],
-};
-
-// Dynamic timing question — wording changes by issue type. See
-// original build notes: CA notice/filing deadlines genuinely
-// differ by claim type (Labor Code 5400, 5405, 132a).
-function buildTimingQuestion(issueType){
-  const base = { id: 'timing', section: 'Eligibility', sectionEs: 'Elegibilidad' };
-  if (issueType === 'cumulative'){
-    return {
-      ...base,
-      title: 'When did you first believe the condition was caused by your job?',
-      titleEs: '¿Cuándo creyó por primera vez que la condición fue causada por su trabajo?',
-      sub: 'California generally requires filing within 1 year of that realization.',
-      subEs: 'California generalmente requiere presentar el reclamo dentro de 1 año de esa realización.',
-      options: [
-        { label: 'Within the last month', labelEs: 'En el último mes', pts: 4 },
-        { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
-        { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 2 },
-        { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
-      ],
-    };
-  }
-  if (issueType === 'denied'){
-    return {
-      ...base,
-      title: 'When was your claim denied or delayed?',
-      titleEs: '¿Cuándo fue negado o retrasado su reclamo?',
-      sub: 'Appeal deadlines are often shorter once a denial letter is issued.',
-      subEs: 'Los plazos de apelación suelen ser más cortos una vez emitida la carta de negación.',
-      options: [
-        { label: 'Within the last month', labelEs: 'En el último mes', pts: 4 },
-        { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
-        { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 1 },
-        { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
-      ],
-    };
-  }
-  if (issueType === 'retaliation'){
-    return {
-      ...base,
-      title: 'When did the retaliation happen?',
-      titleEs: '¿Cuándo ocurrieron las represalias?',
-      sub: 'For example, being fired, demoted, or disciplined after filing.',
-      subEs: 'Por ejemplo, ser despedido, degradado o disciplinado después de presentar el reclamo.',
-      options: [
-        { label: 'Within the last month', labelEs: 'En el último mes', pts: 4 },
-        { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
-        { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 2 },
-        { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
-      ],
-    };
-  }
-  return {
-    ...base,
-    title: 'When did the injury happen?',
-    titleEs: '¿Cuándo ocurrió la lesión?',
-    sub: 'California generally requires notifying your employer within 30 days and filing within 1 year.',
-    subEs: 'California generalmente requiere notificar a su empleador dentro de 30 días y presentar el reclamo dentro de 1 año.',
-    options: [
-      { label: 'Within the last 30 days', labelEs: 'En los últimos 30 días', pts: 4 },
-      { label: '1–6 months ago', labelEs: 'Hace 1–6 meses', pts: 3 },
-      { label: '6 months to 1 year ago', labelEs: 'Hace 6 meses a 1 año', pts: 2 },
-      { label: 'More than 1 year ago', labelEs: 'Hace más de 1 año', pts: 0, hardstop: 'timing' },
-    ],
-  };
-}
-
-// NEW — exact date of injury/discovery/denial/retaliation.
-// Added right after the timing-range gate: the range question
-// above is what's easy for a visitor to answer quickly and what
-// drives the SOL gate, but the attorney needs an actual date to
-// confirm deadlines precisely, not just a bucket. This is a
-// free date-input question, not tap-to-select — see the
-// `type: 'date'` branch in renderQuestion(). It's excluded from
-// scoring entirely (see computeResult — questions without an
-// `options` array are skipped).
-function buildDateQuestion(issueType){
-  const base = { id: 'injuryDate', type: 'date', section: 'Eligibility', sectionEs: 'Elegibilidad',
-    sub: 'This helps the attorney confirm exact deadlines — it doesn\u2019t change your estimate.',
-    subEs: 'Esto ayuda al abogado a confirmar los plazos exactos — no cambia su estimado.' };
-  if (issueType === 'cumulative'){
-    return { ...base, title: 'What date did you first believe this was work-related?', titleEs: '¿En qué fecha creyó por primera vez que esto estaba relacionado con el trabajo?' };
-  }
-  if (issueType === 'denied'){
-    return { ...base, title: 'What date was your claim denied or delayed?', titleEs: '¿En qué fecha fue negado o retrasado su reclamo?' };
-  }
-  if (issueType === 'retaliation'){
-    return { ...base, title: 'What date did the retaliation happen?', titleEs: '¿En qué fecha ocurrieron las represalias?' };
-  }
-  return { ...base, title: 'What was the exact date of the injury?', titleEs: '¿Cuál fue la fecha exacta de la lesión?' };
-}
-
-const Q_NOTIFIED = {
-  id: 'notified',
-  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
-  title: 'Did you tell your employer about this?',
-  titleEs: '¿Le informó a su empleador sobre esto?',
-  sub: '', subEs: '',
-  options: [
-    { label: 'Yes, right away', labelEs: 'Sí, de inmediato', pts: 4 },
-    { label: 'Yes, but later than I probably should have', labelEs: 'Sí, pero más tarde de lo que probablemente debí', pts: 2 },
-    { label: 'No, not yet', labelEs: 'No, todavía no', pts: 1 },
-    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
-  ],
-};
-
-const Q_DWC1 = {
-  id: 'dwc1',
-  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
-  title: 'Did you fill out a DWC-1 claim form?',
-  titleEs: '¿Completó un formulario de reclamo DWC-1?',
-  sub: 'This is the specific form that formally starts a workers\u2019 comp claim — separate from just telling your employer.',
-  subEs: 'Este es el formulario específico que inicia formalmente un reclamo de compensación laboral — es distinto de solo avisarle a su empleador.',
-  options: [
-    { label: 'Yes', labelEs: 'Sí', pts: 3 },
-    { label: 'No', labelEs: 'No', pts: 2 },
-    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
-  ],
-};
-
-const Q_CLAIM_STATUS = {
-  id: 'claimStatus',
-  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
-  title: "What's the status of your workers' comp claim?",
-  titleEs: '¿Cuál es el estado de su reclamo de compensación laboral?',
-  sub: '', subEs: '',
-  options: [
-    { label: "Haven't filed a claim yet", labelEs: 'Todavía no he presentado un reclamo', pts: 2 },
-    { label: 'Filed and pending', labelEs: 'Presentado y pendiente', pts: 3 },
-    { label: 'Filed and accepted, but something\u2019s being disputed', labelEs: 'Presentado y aceptado, pero algo está en disputa', pts: 4 },
-    { label: 'Filed and fully denied', labelEs: 'Presentado y completamente negado', pts: 4 },
-  ],
-};
-
-const Q_MAIN_ISSUE = {
-  id: 'mainIssue',
-  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
-  title: 'What\u2019s the main problem right now?',
-  titleEs: '¿Cuál es el problema principal en este momento?',
-  sub: '', subEs: '',
-  options: [
-    { label: 'My claim was denied', labelEs: 'Mi reclamo fue negado', pts: 4 },
-    { label: 'I haven\u2019t received any medical treatment', labelEs: 'No he recibido ningún tratamiento médico', pts: 3 },
-    { label: 'Treatment is being denied or delayed', labelEs: 'El tratamiento está siendo negado o retrasado', pts: 4 },
-    { label: 'I\u2019m not getting paid for missed work', labelEs: 'No me están pagando por el trabajo perdido', pts: 4 },
-    { label: 'Employer says it\u2019s not work-related', labelEs: 'El empleador dice que no está relacionado con el trabajo', pts: 4 },
-    { label: 'I haven\u2019t filed a claim yet', labelEs: 'Todavía no he presentado un reclamo', pts: 2 },
-    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
-  ],
-};
-
-const Q_DEADLINE = {
-  id: 'deadline',
-  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
-  title: 'Do you have a hearing, medical exam, or other deadline coming up?',
-  titleEs: '¿Tiene una audiencia, examen médico u otro plazo próximo?',
-  sub: 'For example, a QME appointment or a scheduled hearing date.',
-  subEs: 'Por ejemplo, una cita de QME o una fecha de audiencia programada.',
-  options: [
-    { label: 'Yes', labelEs: 'Sí', pts: 4 },
-    { label: 'No', labelEs: 'No', pts: 2 },
-    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
-  ],
-};
-
-const Q_RETALIATION_ACTION = {
-  id: 'retaliationAction',
-  section: 'Claim Status', sectionEs: 'Estado del Reclamo',
-  title: 'What happened after you filed your claim?',
-  titleEs: '¿Qué pasó después de presentar su reclamo?',
-  sub: '', subEs: '',
-  options: [
-    { label: 'I was fired', labelEs: 'Me despidieron', pts: 4 },
-    { label: 'I was demoted or had hours cut', labelEs: 'Me degradaron o me redujeron las horas', pts: 3 },
-    { label: 'I started being treated differently', labelEs: 'Empezaron a tratarme diferente', pts: 2 },
-    { label: "Not sure", labelEs: 'No estoy seguro/a', pts: 1, notSure: true },
-  ],
-};
-
-const Q_BODY_PART = {
-  id: 'bodyPart',
-  section: 'Injury', sectionEs: 'Lesión',
-  title: 'What\u2019s the main body part or area affected?',
-  titleEs: '¿Cuál es la parte del cuerpo o área principal afectada?',
-  sub: '', subEs: '',
-  options: [
-    { label: 'Back or neck', labelEs: 'Espalda o cuello', pts: 3 },
-    { label: 'Shoulder or arm', labelEs: 'Hombro o brazo', pts: 3 },
-    { label: 'Wrist or hand', labelEs: 'Muñeca o mano', pts: 2 },
-    { label: 'Knee, leg, or foot', labelEs: 'Rodilla, pierna o pie', pts: 3 },
-    { label: 'Head or neurological', labelEs: 'Cabeza o neurológico', pts: 4 },
-    { label: 'Stress or psychological', labelEs: 'Estrés o psicológico', pts: 3 },
-    { label: 'Other or multiple areas', labelEs: 'Otra o múltiples áreas', pts: 3 },
+    { label: 'Filed, and it\u2019s moving forward', labelEs: 'Presentado, y está avanzando', pts: 3 },
+    { label: 'Filed, but disputed or denied', labelEs: 'Presentado, pero en disputa o negado', pts: 4 },
+    { label: 'Reported it, but haven\u2019t filed a claim yet', labelEs: 'Lo reporté, pero todavía no he presentado un reclamo', pts: 2 },
+    { label: 'Haven\u2019t told my employer yet', labelEs: 'Todavía no le he dicho a mi empleador', pts: 1 },
   ],
 };
 
@@ -522,21 +360,6 @@ const Q_TREATMENT = {
     { label: 'Yes, ongoing treatment', labelEs: 'Sí, tratamiento continuo', pts: 3 },
     { label: 'No, treatment is complete', labelEs: 'No, el tratamiento ha terminado', pts: 2 },
     { label: "Haven't started treatment yet", labelEs: 'Todavía no he comenzado el tratamiento', pts: 1 },
-  ],
-};
-
-const Q_WORK_ABILITY = {
-  id: 'workAbility',
-  section: 'Injury', sectionEs: 'Lesión',
-  title: 'What\u2019s your work status now?',
-  titleEs: '¿Cuál es su situación laboral actual?',
-  sub: '', subEs: '',
-  options: [
-    { label: 'Currently off work because of this', labelEs: 'Actualmente sin trabajar por esto', pts: 4 },
-    { label: 'Working, but with restrictions', labelEs: 'Trabajando, pero con restricciones', pts: 3 },
-    { label: 'Working full duty now, but missed time before', labelEs: 'Trabajando tiempo completo ahora, pero perdí tiempo antes', pts: 2 },
-    { label: 'Working full duty, never missed time', labelEs: 'Trabajando tiempo completo, nunca perdí tiempo', pts: 1 },
-    { label: "Not sure yet", labelEs: 'Todavía no estoy seguro/a', pts: 2, notSure: true },
   ],
 };
 
@@ -591,25 +414,22 @@ function resetState(){
    FLOW LOGIC
    ============================================================ */
 function buildSteps(){
-  const steps = [
+  // Fixed 7-question flow for everyone, regardless of which
+  // category was picked on the opening screen. Category is still
+  // captured and sent with the lead (real, useful context for
+  // whoever's routing it), but no longer changes which questions
+  // get asked — that branching was most of what made the old
+  // version feel long, and it wasn't buying enough accuracy to
+  // justify the extra screens.
+  return [
     Q_REPRESENTED,
     Q_EMPLOYEE_STATUS,
-    Q_STILL_EMPLOYED,
-    buildTimingQuestion(state.issueType),
-    buildDateQuestion(state.issueType), // <-- new, right after the timing range question
-    Q_NOTIFIED,
-    Q_DWC1,
-    Q_CLAIM_STATUS,
-    Q_MAIN_ISSUE,
-    Q_DEADLINE,
+    Q_TIMING,
+    Q_STATUS,
+    Q_SEVERITY,
+    Q_TREATMENT,
+    Q_DOCUMENTATION,
   ];
-
-  if (state.issueType === 'retaliation') {
-    steps.push(Q_RETALIATION_ACTION);
-  }
-
-  steps.push(Q_BODY_PART, Q_SEVERITY, Q_TREATMENT, Q_WORK_ABILITY, Q_DOCUMENTATION);
-  return steps;
 }
 
 function currentQuestion(){ return state.steps[state.stepIndex]; }
@@ -650,13 +470,22 @@ function goBack(){
 function computeResult(){
   let score = 0, max = 0;
   state.steps.forEach(q => {
-    if (!q.options) return; // date-input questions aren't scored
+    if (!q.options) return; // safety guard, not currently needed — no non-scored question types remain in this shortened flow
     const chosen = state.answers[q.id];
     const best = Math.max(...q.options.map(o => o.pts));
     max += best;
     if (chosen) score += chosen.pts;
   });
   const pct = max > 0 ? score / max : 0;
+  // >>> RETEST THIS VALUE <<<
+  // SKEW was tuned against the old, much longer (14-question)
+  // version of this flow. The math still works the same way
+  // (percentage of max achievable, not absolute point count), but
+  // with only 7 questions now, a handful of test runs is worth
+  // doing before trusting this number — click through with a few
+  // different realistic answer combinations and see whether the
+  // tiers it lands on feel right, same as when this was first
+  // calibrated.
   const SKEW = 2.6;
   const skewedPct = Math.pow(pct, SKEW);
   const tierIndex = Math.min(TIERS.length - 1, Math.floor(skewedPct * TIERS.length));
@@ -668,6 +497,8 @@ function computeResult(){
 /* ============================================================
    RENDER
    ============================================================ */
+// Reads Meta's _fbc/_fbp cookies for CAPI match-key parameters — see employment's index.html for full explanation.
+function getMetaCookie(name){ const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)')); return match ? decodeURIComponent(match[1]) : null; }
 function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
 function appendAll(container, html){ const t = document.createElement('template'); t.innerHTML = html.trim(); container.append(...t.content.childNodes); }
 
@@ -783,48 +614,21 @@ function renderQuestion(app){
 
   const bodyWrap = content.querySelector('#q-body');
 
-  if (q.type === 'date') {
-    // Free date-input question — not tap-to-select. Native
-    // HTML5 date picker keeps this simple with no extra library.
-    appendAll(bodyWrap, `
-      <div class="field">
-        <label for="q-date-input">Date · Fecha</label>
-        <input id="q-date-input" type="date">
-      </div>
+  const optWrap = el('<div class="options"></div>');
+  q.options.forEach(opt => {
+    const b = el(`
+      <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
+        <span>${opt.label}<span class="opt-es">${opt.labelEs || ''}</span></span>
+        <span class="check"></span>
+      </button>
     `);
-  } else {
-    const optWrap = el('<div class="options"></div>');
-    q.options.forEach(opt => {
-      const b = el(`
-        <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
-          <span>${opt.label}<span class="opt-es">${opt.labelEs || ''}</span></span>
-          <span class="check"></span>
-        </button>
-      `);
-      b.onclick = () => selectOption(q, opt);
-      optWrap.appendChild(b);
-    });
-    bodyWrap.appendChild(optWrap);
-  }
+    b.onclick = () => selectOption(q, opt);
+    optWrap.appendChild(b);
+  });
+  bodyWrap.appendChild(optWrap);
 
-  const footerHtml = q.type === 'date'
-    ? `<div class="footer">
-         <button class="back-link" id="back">&larr; Back · Atrás</button>
-         <button class="btn btn-primary" id="date-continue">Continue<span class="btn-es">Continuar</span></button>
-       </div>`
-    : `<div class="footer"><button class="back-link" id="back">&larr; Back · Atrás</button></div>`;
-  appendAll(app, footerHtml);
+  appendAll(app, `<div class="footer"><button class="back-link" id="back">&larr; Back · Atrás</button></div>`);
   document.getElementById('back').onclick = goBack;
-
-  if (q.type === 'date') {
-    document.getElementById('date-continue').onclick = () => {
-      const val = document.getElementById('q-date-input').value;
-      // Not scored (see computeResult), so pts doesn't matter —
-      // stored purely so it shows up in the lead's full detail.
-      state.answers[q.id] = { label: val || 'Not provided', pts: 0 };
-      advance();
-    };
-  }
 }
 
 function renderStop(app){
@@ -944,6 +748,8 @@ function renderReveal(app){
 
     const payload = {
       vertical: 'WC',
+      fbc: getMetaCookie('_fbc'),
+      fbp: getMetaCookie('_fbp'),
       name: state.contact.name,
       phone: state.contact.phone,
       email: state.contact.email,
