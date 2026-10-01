@@ -215,60 +215,21 @@ src="https://www.facebook.com/tr?id=1356237486653789&ev=PageView&noscript=1"
    - Claims generally run on a roughly 4-year window, distinct
      from every SOL rule used elsewhere on this site.
 
-   >>> POINT VALUES AND TIERS BELOW ARE PLACEHOLDERS <<<
-   Same caveat as every other vertical — rough estimates for
-   prototyping the mechanism, not verified against a real
-   attorney's case-value judgment yet. Tier figures were scaled
-   to reflect that lemon law recoveries are usually tied to the
-   vehicle's price (repurchase/replacement value) plus statutory
-   penalties, so they run lower than employment or PI cases and
-   rarely reach into high seven figures except extreme, willful,
-   ultra-luxury-vehicle cases.
+   >>> POINT VALUES REMOVED <<<
+   This vertical used to score answers into a dollar-figure tier
+   (like the other three verticals) and display an outcome
+   headline. That was removed for compliance reasons — see the
+   note in computeResult() — in favor of directly reflecting which
+   Song-Beverly presumption signals (Civil Code §1793.22(b)) the
+   person's own answers hit, with no scoring or prediction layer
+   in between.
    ============================================================ */
-
-const TIERS = [
-  { label: 'Low five figures',   floor: 5000,     ceiling: 10000   },
-  { label: 'Mid five figures',   floor: 10000,    ceiling: 20000   },
-  { label: 'High five figures',  floor: 20000,    ceiling: 35000   },
-  { label: 'Low six figures',    floor: 35000,    ceiling: 60000   },
-  { label: 'Mid six figures',    floor: 60000,    ceiling: 100000  },
-  { label: 'High six figures',   floor: 100000,   ceiling: 150000  },
-  { label: 'Low seven figures',  floor: 150000,   ceiling: 300000  },
-  { label: 'Mid seven figures',  floor: 300000,   ceiling: 600000  },
-  { label: 'High seven figures', floor: 600000,   ceiling: null    },
-];
-function tierDisplayValue(tier){
-  if (tier.ceiling == null) return '$' + tier.floor.toLocaleString('en-US') + '+';
-  const mid = Math.round((tier.floor + tier.ceiling) / 2 / 1000) * 1000;
-  return '$' + mid.toLocaleString('en-US');
-}
 
 // ---- Defect type (single-select — ties directly to the
 // presumption thresholds: safety defects need fewer repair
 // attempts to qualify than non-safety defects). --------------
-const ISSUE_TYPES = [
-  { key: 'repeat', label: 'Same Problem, Repeated Repairs', sub: 'The issue keeps coming back after being "fixed"' },
-  { key: 'safety', label: 'Safety-Related Defect', sub: 'Brakes, steering, airbags, or anything that could cause an accident' },
-  { key: 'downtime', label: 'Vehicle Spent Weeks in the Shop', sub: 'Out of service for an extended repair period' },
-  { key: 'buyback', label: 'Manufacturer Buyback Was Too Low or Denied', sub: 'Already offered a buyback or replacement you\u2019re unhappy with' },
-];
-
-// ---- Vehicle info — two free-text fields (year + make/model),
-// not tap-select. Collected right after category so it's
-// available to personalize the reveal screen ("your 2022 Honda
-// Civic") and so the lead itself includes it without needing a
-// separate dedicated field in the backend. Not scored — see the
-// `type: 'vehicleInfo'` branch in renderQuestion() and the
-// !q.options guard in computeResult().
-const Q_VEHICLE_INFO = {
-  id: 'vehicleInfo',
-  type: 'vehicleInfo',
-  section: 'Vehicle',
-  title: 'What\u2019s the year, make, and model of the vehicle?',
-  sub: 'This helps the attorney pull up your case quickly.',
-};
-
-// ---- Gate questions -----------------------------------------
+// ---- Gate question — always present, not counted against the
+// question budget. ---------------------------------------------
 const Q_REPRESENTED = {
   id: 'represented',
   section: 'Eligibility',
@@ -280,64 +241,40 @@ const Q_REPRESENTED = {
   ],
 };
 
-const Q_CA_PURCHASE = {
-  id: 'caPurchase',
-  section: 'Eligibility',
-  title: 'Did you buy or lease the vehicle in California?',
-  sub: '',
-  options: [
-    { label: 'Yes', pts: 4 },
-    { label: 'No', pts: 1 },
-    { label: "Not sure", pts: 2, notSure: true },
-  ],
-};
+// ---- The 5 core questions --------------------------------------
 
-const Q_UNDER_WARRANTY = {
-  id: 'underWarranty',
-  section: 'Eligibility',
-  title: 'Was the vehicle under the manufacturer\u2019s warranty during the repair attempts?',
-  sub: '',
+const Q_VEHICLE_TYPE = {
+  id: 'vehicleType',
+  section: 'Vehicle',
+  title: 'Was the vehicle brand new, leased, or certified pre-owned (CPO)?',
+  sub: 'This affects what warranty coverage applied.',
   options: [
-    { label: 'Yes', pts: 4 },
-    { label: 'No', pts: 1 },
-    { label: "Not sure", pts: 2, notSure: true },
-  ],
-};
-
-const Q_CPO = {
-  id: 'cpo',
-  section: 'Eligibility',
-  title: 'Was the vehicle new, or certified pre-owned (CPO)?',
-  sub: 'CPO vehicles often come with extended manufacturer warranty coverage, which can affect eligibility.',
-  options: [
-    { label: 'New', pts: 4 },
+    { label: 'Brand new', pts: 4 },
+    { label: 'Leased', pts: 3, isLease: true },
     { label: 'Certified pre-owned (CPO)', pts: 3 },
     { label: 'Used, not CPO', pts: 1 },
-    { label: "Not sure", pts: 1, notSure: true },
   ],
 };
 
-// Timing gate — California lemon law claims generally run on
-// roughly a 4-year window. This is simplified for the
-// calculator; actual accrual-date arguments can get more
-// complex in practice.
-const Q_TIMING = {
-  id: 'timing',
-  section: 'Eligibility',
-  title: 'How long ago did you first report this problem to the dealer?',
-  sub: 'California generally allows around 4 years to bring this type of claim.',
+// Conditional — only asked if the vehicle was leased. A demo or
+// dealer-driven vehicle before the lease started can change how
+// "new" the vehicle legally was when the lease began.
+const Q_DEMO_DEALER = {
+  id: 'demoDealer',
+  section: 'Vehicle',
+  title: 'Was it ever a demo or dealer-driven vehicle before your lease started?',
+  sub: '',
   options: [
-    { label: 'Within the last 6 months', pts: 4 },
-    { label: '6 months to 2 years ago', pts: 3 },
-    { label: '2–4 years ago', pts: 2 },
-    { label: 'More than 4 years ago', pts: 0, hardstop: 'timing' },
+    { label: 'Yes', pts: 3 },
+    { label: 'No', pts: 1 },
+    { label: "Not sure", pts: 1, notSure: true },
   ],
 };
 
 const Q_REPAIR_ATTEMPTS = {
   id: 'repairAttempts',
   section: 'Repair History',
-  title: 'How many times has the dealer tried to fix this same problem?',
+  title: 'How many times has it been in the shop for repairs?',
   sub: 'Fewer attempts can still qualify for safety-related defects specifically.',
   options: [
     { label: '1 time', pts: 1 },
@@ -350,7 +287,7 @@ const Q_REPAIR_ATTEMPTS = {
 const Q_DAYS_IN_SHOP = {
   id: 'daysInShop',
   section: 'Repair History',
-  title: 'Roughly how many total days has the vehicle been in the shop for repairs?',
+  title: 'Roughly how many days has it been in the shop?',
   sub: 'This counts cumulative days across all repair visits, not just one trip.',
   options: [
     { label: 'Fewer than 10 days', pts: 1 },
@@ -359,53 +296,14 @@ const Q_DAYS_IN_SHOP = {
   ],
 };
 
-const Q_AUTHORIZED_DEALER = {
-  id: 'authorizedDealer',
-  section: 'Repair History',
-  title: 'Were the repairs done at an authorized dealer or manufacturer service center?',
+const Q_VEHICLE_YEAR = {
+  id: 'vehicleYear2020',
+  section: 'Vehicle',
+  title: 'Is the vehicle a 2020 model year or newer?',
   sub: '',
   options: [
-    { label: 'Yes', pts: 4 },
+    { label: 'Yes', pts: 3 },
     { label: 'No', pts: 1 },
-    { label: "Not sure", pts: 2, notSure: true },
-  ],
-};
-
-const Q_BUYBACK_DETAILS = {
-  id: 'buybackDetails',
-  section: 'Repair History',
-  title: 'What happened with the buyback offer?',
-  sub: '',
-  options: [
-    { label: 'They offered too little', pts: 4 },
-    { label: 'They denied my request', pts: 4 },
-    { label: "Haven't asked yet", pts: 2 },
-    { label: "Not sure", pts: 1, notSure: true },
-  ],
-};
-
-const Q_DOCUMENTATION = {
-  id: 'documentation',
-  section: 'Documentation',
-  title: 'Do you have your repair orders or invoices?',
-  sub: 'These are the most important documents in a lemon law claim.',
-  options: [
-    { label: 'Yes, several saved', pts: 4 },
-    { label: 'Yes, a little', pts: 2 },
-    { label: 'No documentation', pts: 0 },
-    { label: "Not sure / haven't checked", pts: 1, notSure: true },
-  ],
-};
-
-const Q_VEHICLE_STATUS = {
-  id: 'vehicleStatus',
-  section: 'Vehicle Status',
-  title: 'Do you still have the vehicle?',
-  sub: '',
-  options: [
-    { label: 'Yes, and the problem is still happening', pts: 4 },
-    { label: 'Yes, but it seems fixed for now', pts: 2 },
-    { label: 'No, I sold or traded it', pts: 2 },
     { label: "Not sure", pts: 1, notSure: true },
   ],
 };
@@ -413,12 +311,28 @@ const Q_VEHICLE_STATUS = {
 /* ============================================================
    STATE
    ============================================================ */
+// Captures ad-attribution data present in the URL when someone
+// lands on the page — this is what lets you tie a submitted lead
+// back to the specific ad/campaign that produced it. Read once at
+// load; doesn't change as someone answers questions.
+function captureTracking(){
+  const params = new URLSearchParams(window.location.search);
+  return {
+    utm_source: params.get('utm_source') || '',
+    utm_medium: params.get('utm_medium') || '',
+    utm_campaign: params.get('utm_campaign') || '',
+    utm_content: params.get('utm_content') || '',
+    utm_term: params.get('utm_term') || '',
+    fbclid: params.get('fbclid') || '',
+    gclid: params.get('gclid') || '',
+    referrer: document.referrer || '',
+  };
+}
+
 let state = {
   screen: 'category',
-  issueType: null,
-  vehicleYear: '',
-  vehicleModel: '',
-  outcome: null,
+  signals: [],
+  tracking: captureTracking(),
   answers: {},
   notSureCount: 0,
   steps: [],
@@ -432,10 +346,8 @@ let state = {
 function resetState(){
   state = {
     screen: 'category',
-    issueType: null,
-    vehicleYear: '',
-    vehicleModel: '',
-    outcome: null,
+    signals: [],
+    tracking: state.tracking, // keep — same original ad click for this session
     answers: {},
     notSureCount: 0,
     steps: [],
@@ -452,24 +364,21 @@ function resetState(){
    FLOW LOGIC
    ============================================================ */
 function buildSteps(){
-  const steps = [
-    Q_VEHICLE_INFO,
+  // Fixed 5-question flow (plus the always-present represented
+  // gate and the non-scored vehicle-info field, neither of which
+  // count against the "5 questions" budget). Q_VEHICLE_TYPE sits
+  // at index 0 because it's answered on the landing screen itself
+  // (see renderCategory) — stepIndex starts at 1 to skip re-asking
+  // it. Q_DEMO_DEALER isn't included here — it's spliced in right
+  // after index 0 by renderCategory's click handler, only when the
+  // answer was "Leased".
+  return [
+    Q_VEHICLE_TYPE,
     Q_REPRESENTED,
-    Q_CA_PURCHASE,
-    Q_UNDER_WARRANTY,
-    Q_CPO,
-    Q_TIMING,
     Q_REPAIR_ATTEMPTS,
     Q_DAYS_IN_SHOP,
-    Q_AUTHORIZED_DEALER,
+    Q_VEHICLE_YEAR,
   ];
-
-  if (state.issueType === 'buyback') {
-    steps.push(Q_BUYBACK_DETAILS);
-  }
-
-  steps.push(Q_DOCUMENTATION, Q_VEHICLE_STATUS);
-  return steps;
 }
 
 function currentQuestion(){ return state.steps[state.stepIndex]; }
@@ -484,6 +393,11 @@ function selectOption(question, option){
     render();
     return;
   }
+
+  // Note: the demo/dealer conditional splice for Q_VEHICLE_TYPE
+  // happens in renderCategory's click handler, not here — that
+  // question is only ever answered on the merged landing screen,
+  // never through this normal question-flow path.
 
   advance();
 }
@@ -508,33 +422,48 @@ function goBack(){
 }
 
 function computeResult(){
-  let score = 0, max = 0;
-  state.steps.forEach(q => {
-    if (!q.options) return; // vehicle info and other free-input questions aren't scored
-    const chosen = state.answers[q.id];
-    const best = Math.max(...q.options.map(o => o.pts));
-    max += best;
-    if (chosen) score += chosen.pts;
-  });
-  const pct = max > 0 ? score / max : 0;
-  // Same skew mechanism as the other three verticals. Placeholder
-  // value — tune against real test answers once live.
-  const SKEW = 2.2;
-  const skewedPct = Math.pow(pct, SKEW);
-  const tierIndex = Math.min(TIERS.length - 1, Math.floor(skewedPct * TIERS.length));
-  state.tierIndex = tierIndex;
+  // ------------------------------------------------------------
+  // COMPLIANCE NOTE — read before changing this function.
+  // This calculator does NOT tell people they qualify for a
+  // buyback, or predict an outcome at all. Declaring a specific
+  // result ("Full Buyback") is a guaranteed-outcome claim, which
+  // is prohibited in California attorney advertising (B&P
+  // §6157.2) — and separately, California's general false
+  // advertising law (B&P §17500 / §17200, the UCL/FAL) applies to
+  // non-attorney advertisers too, meaning this business is bound
+  // by it even though it isn't a law firm. A disclaimer elsewhere
+  // on the page does not cure a prominent claim like that.
+  //
+  // Instead, this reflects the person's OWN answers back against
+  // the actual statutory presumption criteria in Civil Code
+  // §1793.22(b) — it reports what was found, not what it means.
+  // Only an attorney reviewing the full case can say what a claim
+  // is actually worth or likely to result in.
+  // ------------------------------------------------------------
+  const signals = [];
 
-  // >>> TUNABLE, PLACEHOLDER <<<
-  // Outcome headline shown on the reveal screen. Deliberately a
-  // LOW bar — most people who complete the flow should see "Full
-  // Buyback" rather than a hedged result, since that's the
-  // strongest, most motivating outcome and the point of this
-  // screen is to get someone to submit their info. Only
-  // genuinely weak answer combinations (very low raw pct, before
-  // the skew curve above) fall into the softer label instead.
-  const FULL_BUYBACK_THRESHOLD = 0.15;
-  state.outcome = pct >= FULL_BUYBACK_THRESHOLD ? 'FULL BUYBACK' : 'CASE REVIEW NEEDED';
+  const daysAnswer = state.answers['daysInShop'];
+  if (daysAnswer && daysAnswer.label === 'More than 30 days') {
+    signals.push({ text: 'The vehicle was out of service 30 days or more' });
+  }
 
+  const attemptsAnswer = state.answers['repairAttempts'];
+  if (attemptsAnswer && attemptsAnswer.label === '4 or more times') {
+    signals.push({ text: 'Four or more repair attempts for the same problem' });
+  }
+
+  // Warranty signal now reads from the single consolidated
+  // "New / Leased / CPO / Used" question instead of two separate
+  // questions. New and CPO vehicles typically carry manufacturer
+  // warranty coverage; a leased vehicle is covered too unless
+  // something unusual (a used-vehicle lease) is going on, which
+  // this simplified flow doesn't try to distinguish further.
+  const vehicleTypeAnswer = state.answers['vehicleType'];
+  if (vehicleTypeAnswer && (vehicleTypeAnswer.label === 'Brand new' || vehicleTypeAnswer.label === 'Certified pre-owned (CPO)' || vehicleTypeAnswer.label === 'Leased')) {
+    signals.push({ text: 'The vehicle was likely covered by the manufacturer\u2019s warranty' });
+  }
+
+  state.signals = signals;
   state.screen = 'reveal';
   render();
 }
@@ -542,6 +471,8 @@ function computeResult(){
 /* ============================================================
    RENDER
    ============================================================ */
+// Reads Meta's _fbc/_fbp cookies for CAPI match-key parameters — see employment's index.html for full explanation.
+function getMetaCookie(name){ const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)')); return match ? decodeURIComponent(match[1]) : null; }
 function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
 function appendAll(container, html){ const t = document.createElement('template'); t.innerHTML = html.trim(); container.append(...t.content.childNodes); }
 
@@ -573,34 +504,44 @@ function renderCategory(app){
       <div class="readout" id="readout" style="font-size:24px;">
         <span class="digit">—</span><span class="digit">—</span><span class="digit">—</span><span class="digit">—</span>
       </div>
-      <div class="readout-label" style="margin-bottom:6px;">Your result appears here when you're done</div>
+      <div class="readout-label" style="margin-bottom:6px;">See how many lemon law signals your answers show</div>
     </div>
   `);
   app.appendChild(header);
 
+  // Merged landing + first-question screen — Q_VEHICLE_TYPE
+  // (New/Leased/CPO/Used) is the literal first thing someone
+  // answers, per Josh's explicit ordering. This bypasses the
+  // normal selectOption()/buildSteps() sequence since state.steps
+  // doesn't exist yet on this screen — the logic below replicates
+  // what selectOption() would do (record the answer, splice in
+  // the conditional demo/dealer question if leased) before moving
+  // into the regular question flow.
   const content = el(`
     <div class="content">
       <div class="eyebrow">Step 1 · California</div>
-      <h1 class="q">What's going on with your vehicle?</h1>
-      <p class="sub">Select the one that best fits. Free, with no obligation.</p>
+      <h1 class="q">${Q_VEHICLE_TYPE.title}</h1>
+      <p class="sub">${Q_VEHICLE_TYPE.sub}</p>
       <div class="options" id="cat-options"></div>
     </div>
   `);
   app.appendChild(content);
 
   const optWrap = content.querySelector('#cat-options');
-  ISSUE_TYPES.forEach(t => {
-    const selected = state.issueType === t.key;
+  Q_VEHICLE_TYPE.options.forEach(opt => {
     const btn = el(`
-      <button class="opt ${selected ? 'selected' : ''}">
-        <span>${t.label}<br><span class="sub-note">${t.sub}</span></span>
+      <button class="opt">
+        <span>${opt.label}</span>
         <span class="check"></span>
       </button>
     `);
     btn.onclick = () => {
-      state.issueType = t.key;
+      state.answers[Q_VEHICLE_TYPE.id] = opt;
       state.steps = buildSteps();
-      state.stepIndex = 0;
+      if (opt.isLease) {
+        state.steps.splice(1, 0, Q_DEMO_DEALER);
+      }
+      state.stepIndex = 1; // Q_VEHICLE_TYPE (index 0) is already answered
       state.screen = 'question';
       render();
     };
@@ -609,6 +550,7 @@ function renderCategory(app){
 
   if (!window.__llReadoutTicked){
     window.__llReadoutTicked = true;
+    if (typeof fbq === 'function') { fbq('trackCustom', 'SurveyStart'); }
     const digitEls = app.querySelectorAll('#readout .digit');
     const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -647,53 +589,21 @@ function renderQuestion(app){
 
   const bodyWrap = content.querySelector('#q-body');
 
-  if (q.type === 'vehicleInfo') {
-    appendAll(bodyWrap, `
-      <div class="field">
-        <label for="v-year">Year</label>
-        <input id="v-year" type="text" inputmode="numeric" placeholder="2022" maxlength="4" value="${state.vehicleYear || ''}">
-      </div>
-      <div class="field">
-        <label for="v-model">Make &amp; Model</label>
-        <input id="v-model" type="text" placeholder="Honda Civic" value="${state.vehicleModel || ''}">
-      </div>
+  const optWrap = el('<div class="options"></div>');
+  q.options.forEach(opt => {
+    const b = el(`
+      <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
+        <span>${opt.label}</span>
+        <span class="check"></span>
+      </button>
     `);
-  } else {
-    const optWrap = el('<div class="options"></div>');
-    q.options.forEach(opt => {
-      const b = el(`
-        <button class="opt ${opt.notSure ? 'opt-not-sure' : ''}">
-          <span>${opt.label}</span>
-          <span class="check"></span>
-        </button>
-      `);
-      b.onclick = () => selectOption(q, opt);
-      optWrap.appendChild(b);
-    });
-    bodyWrap.appendChild(optWrap);
-  }
+    b.onclick = () => selectOption(q, opt);
+    optWrap.appendChild(b);
+  });
+  bodyWrap.appendChild(optWrap);
 
-  const footerHtml = q.type === 'vehicleInfo'
-    ? `<div class="footer">
-         <button class="back-link" id="back">&larr; Back</button>
-         <button class="btn btn-primary" id="vehicle-continue">Continue</button>
-       </div>`
-    : `<div class="footer"><button class="back-link" id="back">&larr; Back</button></div>`;
-  appendAll(app, footerHtml);
+  appendAll(app, `<div class="footer"><button class="back-link" id="back">&larr; Back</button></div>`);
   document.getElementById('back').onclick = goBack;
-
-  if (q.type === 'vehicleInfo') {
-    document.getElementById('vehicle-continue').onclick = () => {
-      state.vehicleYear = document.getElementById('v-year').value.trim();
-      state.vehicleModel = document.getElementById('v-model').value.trim();
-      const combined = [state.vehicleYear, state.vehicleModel].filter(Boolean).join(' ') || 'Not provided';
-      // Not scored (see computeResult's !q.options guard), stored
-      // purely so it shows up in the lead's full detail and can
-      // personalize the reveal screen.
-      state.answers[q.id] = { label: combined, pts: 0 };
-      advance();
-    };
-  }
 }
 
 function renderStop(app){
@@ -722,19 +632,37 @@ function renderStop(app){
 }
 
 function renderReveal(app){
-  const tier = TIERS[state.tierIndex]; // still computed internally — sent with the lead for your own reference, just not shown to the visitor as a dollar figure anymore.
-  const target = state.outcome || 'FULL BUYBACK';
-  const vehicleLabel = [state.vehicleYear, state.vehicleModel].filter(Boolean).join(' ');
+  const signals = state.signals || [];
+  const TOTAL_SIGNALS = 3;
+
+  const checklistHtml = signals.length
+    ? signals.map(s => `<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;"><span style="color:var(--accent); font-weight:700; flex:0 0 auto;">\u2713</span><span style="font-size:14px; line-height:1.4; color:var(--ink-soft);">${s.text}</span></div>`).join('')
+    : '';
+
+  const highlightHtml = signals.length >= 3
+    ? `<div style="background:var(--accent-soft); border-left:3px solid var(--accent); padding:14px 16px; margin:16px 0; font-size:13.5px; line-height:1.6; color:var(--ink);">Your answers hit several of the markers California\u2019s lemon law presumption is built around. Where a claim like this succeeds, remedies can include the manufacturer buying the vehicle back for what you paid.</div>`
+    : (signals.length === 0
+        ? `<p class="sub" style="margin-top:0;">An attorney will go through your answers with you in detail.</p>`
+        : '');
+
   appendAll(app, `
     <div class="header"><div class="brand"><span class="mark">§</span> The Lemon Law Calculator</div></div>
     <div class="content reveal" style="text-align:left; padding-top:18px; padding-bottom:8px;">
-      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">Your result</div>
-      <div class="readout" id="reveal-readout" style="font-size:34px; margin:2px 0 0 0; letter-spacing:0.01em;"></div>
-      <div class="readout-label" style="margin-bottom:10px;">${vehicleLabel ? 'For your ' + vehicleLabel + ' · ' : ''}based on what you\u2019ve shared</div>
+      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">What your answers show</div>
+      <div class="readout" id="reveal-readout" style="font-size:44px; margin:2px 0 0 0;"></div>
+      <div class="readout-label" style="margin-bottom:2px;">of ${TOTAL_SIGNALS} things California lemon law looks at</div>
+      <div class="readout-label" style="margin-bottom:16px;">Based on what you\u2019ve shared</div>
 
-      <div class="eyebrow" style="margin-top:4px; text-align:center;">Have an attorney call you</div>
+      ${checklistHtml}
+      ${highlightHtml}
+
+      <p style="font-size:12.5px; line-height:1.6; color:var(--ink-faint); margin:16px 0 24px 0; padding-top:16px; border-top:1px solid var(--line);">
+        When a lemon law claim succeeds, California law can require the manufacturer to buy the vehicle back, replace it, or pay compensation — and to pay your attorney\u2019s fees on top of that. Which of those applies to you depends on details an attorney still needs to confirm, starting with your repair orders.
+      </p>
+
+      <div class="eyebrow" style="margin-top:10px; text-align:center;">Have an attorney call you</div>
       <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
-      <p class="sub" style="margin-bottom:12px; text-align:center;">Free, with no obligation. An attorney will call you within a business day.</p>
+      <p class="sub" style="margin-bottom:20px; text-align:center;">Free, with no obligation. An attorney will call you within a business day.</p>
       <div class="field">
         <label for="f-name">Full name</label>
         <input id="f-name" type="text" placeholder="Jane Rivera" value="${state.contact.name}">
@@ -751,6 +679,16 @@ function renderReveal(app){
         <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
         <textarea id="f-freetext" placeholder="Dates or details in your own words — this doesn't change your result, it just helps the call go faster.">${state.freeText}</textarea>
       </div>
+      <!-- Consent checkbox — unchecked by default. This is a real,
+           affirmative opt-in rather than implied-by-submitting
+           consent, matching the TCPA-style express consent
+           standard the referred attorney's spec calls for. -->
+      <div class="field" style="display:flex; gap:10px; align-items:flex-start;">
+        <input id="f-consent" type="checkbox" style="width:18px; height:18px; margin-top:2px; flex:0 0 auto;">
+        <label for="f-consent" style="text-transform:none; font-weight:400; font-size:12.5px; line-height:1.6; color:var(--ink-soft); letter-spacing:0;">
+          I agree to be contacted about my case by phone, text, or email, including by automated dialing or prerecorded messages, even if my number is on a do-not-call list. Message and data rates may apply — reply STOP to opt out. Consent is not a condition of representation. I agree to the Terms and Privacy Policy.
+        </label>
+      </div>
       <!-- Honeypot — same bot-detection pattern as the other verticals -->
       <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
         <label for="f-website">Website</label>
@@ -759,12 +697,11 @@ function renderReveal(app){
     </div>
     <div class="footer" style="position:static; background:none; padding-top:4px;">
       <button class="btn btn-primary" id="contact-submit">Submit</button>
-      <p class="consent" style="margin-top:2px;">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn\u2019t required to use this service. You agree to our Terms and Privacy Policy.</p>
       <div class="disclaimer" style="text-align:left; margin-top:8px; border-top:1px solid var(--line); padding-top:16px;">
-        This result is general and educational — it\u2019s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what your case may actually qualify for.
+        This is general and educational information — it reflects what your own answers show against publicly available legal criteria, not a legal opinion about your specific situation. It is not legal advice, not attorney advertising, and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually qualify for.
       </div>
       <div class="disclaimer" style="text-align:left; margin-top:10px;">
-        The result shown is not guaranteed and is not a final case outcome. Every case must be independently evaluated by a licensed attorney. By submitting this form, you agree to have your information shared with an attorney for review. Nothing on this site constitutes attorney advice.
+        No outcome is guaranteed. Every case must be independently evaluated by a licensed attorney. By submitting this form, you agree to have your information shared with an attorney for review.
       </div>
     </div>
   `);
@@ -782,6 +719,12 @@ function renderReveal(app){
       return;
     }
 
+    if (!document.getElementById('f-consent').checked) {
+      submitBtn.textContent = 'Please check the box above to continue';
+      setTimeout(() => { submitBtn.textContent = 'Submit'; }, 2400);
+      return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
 
@@ -796,17 +739,25 @@ function renderReveal(app){
       };
     });
 
+    const trackingAnswers = [
+      { section: 'Tracking', title: 'UTM Source / Medium / Campaign', answer: [state.tracking.utm_source, state.tracking.utm_medium, state.tracking.utm_campaign].filter(Boolean).join(' / ') || 'Not set' },
+      { section: 'Tracking', title: 'UTM Content / Term', answer: [state.tracking.utm_content, state.tracking.utm_term].filter(Boolean).join(' / ') || 'Not set' },
+      { section: 'Tracking', title: 'Click ID (fbclid / gclid)', answer: [state.tracking.fbclid, state.tracking.gclid].filter(Boolean).join(' / ') || 'Not set' },
+      { section: 'Tracking', title: 'Referrer', answer: state.tracking.referrer || 'Direct / none' },
+    ];
+
     const payload = {
       vertical: 'LL', // Lemon Law — same shared backend, tagged for the inbox
+      fbc: getMetaCookie('_fbc'),
+      fbp: getMetaCookie('_fbp'),
       name: state.contact.name,
       phone: state.contact.phone,
       email: state.contact.email,
-      categories: [ISSUE_TYPES.find(t => t.key === state.issueType)?.label || state.issueType],
-      tierLabel: TIERS[state.tierIndex].label,
-      estimateDisplay: tierDisplayValue(TIERS[state.tierIndex]),
-      outcome: state.outcome,
+      categories: [state.answers['vehicleType']?.label || 'Lemon Law'],
+      tierLabel: signals.length + ' of 3 lemon law signals',
+      estimateDisplay: '', // intentionally blank — see computeResult's compliance note; this vertical no longer estimates or predicts an outcome
       freeText: state.freeText,
-      answers,
+      answers: [...answers, ...trackingAnswers],
       website: document.getElementById('f-website').value,
       elapsedMs: Date.now() - state.startTime,
       eventId,
@@ -832,15 +783,15 @@ function renderReveal(app){
   };
 
   const readoutEl = document.getElementById('reveal-readout');
+  const target = String(signals.length);
   const chars = target.split('');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
   chars.forEach((ch, i) => {
     const span = document.createElement('span');
     span.className = 'digit';
     readoutEl.appendChild(span);
-    if (ch === ' '){ span.style.minWidth = '0.5ch'; span.textContent = '\u00A0'; return; }
-    if (!/[A-Z]/.test(ch) || reduceMotion){ span.textContent = ch; return; }
+    if (!/[0-9]/.test(ch) || reduceMotion){ span.textContent = ch; return; }
     let ticks = 0; const maxTicks = 6 + i;
     const iv = setInterval(() => {
       span.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
