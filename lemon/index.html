@@ -215,19 +215,34 @@ src="https://www.facebook.com/tr?id=1356237486653789&ev=PageView&noscript=1"
    - Claims generally run on a roughly 4-year window, distinct
      from every SOL rule used elsewhere on this site.
 
-   >>> POINT VALUES REMOVED <<<
-   This vertical used to score answers into a dollar-figure tier
-   (like the other three verticals) and display an outcome
-   headline. That was removed for compliance reasons — see the
-   note in computeResult() — in favor of directly reflecting which
-   Song-Beverly presumption signals (Civil Code §1793.22(b)) the
-   person's own answers hit, with no scoring or prediction layer
-   in between.
+   >>> POINT VALUES AND TIERS BELOW ARE PLACEHOLDERS <<<
+   Same caveat as every other vertical — rough estimates for
+   prototyping the mechanism, not verified against a real
+   attorney's case-value judgment yet. Tier figures were scaled
+   to reflect that lemon law recoveries are usually tied to the
+   vehicle's price (repurchase/replacement value) plus statutory
+   penalties, so they run lower than employment or PI cases and
+   rarely reach into high seven figures except extreme, willful,
+   ultra-luxury-vehicle cases.
    ============================================================ */
 
-// ---- Defect type (single-select — ties directly to the
-// presumption thresholds: safety defects need fewer repair
-// attempts to qualify than non-safety defects). --------------
+const TIERS = [
+  { label: 'Low five figures',   floor: 5000,     ceiling: 10000   },
+  { label: 'Mid five figures',   floor: 10000,    ceiling: 20000   },
+  { label: 'High five figures',  floor: 20000,    ceiling: 35000   },
+  { label: 'Low six figures',    floor: 35000,    ceiling: 60000   },
+  { label: 'Mid six figures',    floor: 60000,    ceiling: 100000  },
+  { label: 'High six figures',   floor: 100000,   ceiling: 150000  },
+  { label: 'Low seven figures',  floor: 150000,   ceiling: 300000  },
+  { label: 'Mid seven figures',  floor: 300000,   ceiling: 600000  },
+  { label: 'High seven figures', floor: 600000,   ceiling: null    },
+];
+function tierDisplayValue(tier){
+  if (tier.ceiling == null) return '$' + tier.floor.toLocaleString('en-US') + '+';
+  const mid = Math.round((tier.floor + tier.ceiling) / 2 / 1000) * 1000;
+  return '$' + mid.toLocaleString('en-US');
+}
+
 // ---- Gate question — always present, not counted against the
 // question budget. ---------------------------------------------
 const Q_REPRESENTED = {
@@ -422,48 +437,33 @@ function goBack(){
 }
 
 function computeResult(){
-  // ------------------------------------------------------------
-  // COMPLIANCE NOTE — read before changing this function.
-  // This calculator does NOT tell people they qualify for a
-  // buyback, or predict an outcome at all. Declaring a specific
-  // result ("Full Buyback") is a guaranteed-outcome claim, which
-  // is prohibited in California attorney advertising (B&P
-  // §6157.2) — and separately, California's general false
-  // advertising law (B&P §17500 / §17200, the UCL/FAL) applies to
-  // non-attorney advertisers too, meaning this business is bound
-  // by it even though it isn't a law firm. A disclaimer elsewhere
-  // on the page does not cure a prominent claim like that.
-  //
-  // Instead, this reflects the person's OWN answers back against
-  // the actual statutory presumption criteria in Civil Code
-  // §1793.22(b) — it reports what was found, not what it means.
-  // Only an attorney reviewing the full case can say what a claim
-  // is actually worth or likely to result in.
-  // ------------------------------------------------------------
-  const signals = [];
+  let score = 0, max = 0;
+  state.steps.forEach(q => {
+    if (!q.options) return; // free-input questions aren't scored
+    const chosen = state.answers[q.id];
+    const best = Math.max(...q.options.map(o => o.pts));
+    max += best;
+    if (chosen) score += chosen.pts;
+  });
+  const pct = max > 0 ? score / max : 0;
+  // Same skew mechanism as the other three verticals. Placeholder
+  // value — tune against real test answers once live.
+  const SKEW = 2.2;
+  const skewedPct = Math.pow(pct, SKEW);
+  const tierIndex = Math.min(TIERS.length - 1, Math.floor(skewedPct * TIERS.length));
+  state.tierIndex = tierIndex;
 
-  const daysAnswer = state.answers['daysInShop'];
-  if (daysAnswer && daysAnswer.label === 'More than 30 days') {
-    signals.push({ text: 'The vehicle was out of service 30 days or more' });
-  }
+  // >>> TUNABLE, PLACEHOLDER <<<
+  // Outcome headline shown on the reveal screen. Deliberately a
+  // LOW bar — most people who complete the flow should see "Full
+  // Buyback" rather than a hedged result, since that's the
+  // strongest, most motivating outcome and the point of this
+  // screen is to get someone to submit their info. Only
+  // genuinely weak answer combinations (very low raw pct, before
+  // the skew curve above) fall into the softer label instead.
+  const FULL_BUYBACK_THRESHOLD = 0.15;
+  state.outcome = pct >= FULL_BUYBACK_THRESHOLD ? 'FULL BUYBACK' : 'CASE REVIEW NEEDED';
 
-  const attemptsAnswer = state.answers['repairAttempts'];
-  if (attemptsAnswer && attemptsAnswer.label === '4 or more times') {
-    signals.push({ text: 'Four or more repair attempts for the same problem' });
-  }
-
-  // Warranty signal now reads from the single consolidated
-  // "New / Leased / CPO / Used" question instead of two separate
-  // questions. New and CPO vehicles typically carry manufacturer
-  // warranty coverage; a leased vehicle is covered too unless
-  // something unusual (a used-vehicle lease) is going on, which
-  // this simplified flow doesn't try to distinguish further.
-  const vehicleTypeAnswer = state.answers['vehicleType'];
-  if (vehicleTypeAnswer && (vehicleTypeAnswer.label === 'Brand new' || vehicleTypeAnswer.label === 'Certified pre-owned (CPO)' || vehicleTypeAnswer.label === 'Leased')) {
-    signals.push({ text: 'The vehicle was likely covered by the manufacturer\u2019s warranty' });
-  }
-
-  state.signals = signals;
   state.screen = 'reveal';
   render();
 }
@@ -632,37 +632,18 @@ function renderStop(app){
 }
 
 function renderReveal(app){
-  const signals = state.signals || [];
-  const TOTAL_SIGNALS = 3;
-
-  const checklistHtml = signals.length
-    ? signals.map(s => `<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;"><span style="color:var(--accent); font-weight:700; flex:0 0 auto;">\u2713</span><span style="font-size:14px; line-height:1.4; color:var(--ink-soft);">${s.text}</span></div>`).join('')
-    : '';
-
-  const highlightHtml = signals.length >= 3
-    ? `<div style="background:var(--accent-soft); border-left:3px solid var(--accent); padding:14px 16px; margin:16px 0; font-size:13.5px; line-height:1.6; color:var(--ink);">Your answers hit several of the markers California\u2019s lemon law presumption is built around. Where a claim like this succeeds, remedies can include the manufacturer buying the vehicle back for what you paid.</div>`
-    : (signals.length === 0
-        ? `<p class="sub" style="margin-top:0;">An attorney will go through your answers with you in detail.</p>`
-        : '');
-
+  const tier = TIERS[state.tierIndex]; // still computed internally — sent with the lead for your own reference, just not shown to the visitor as a dollar figure anymore.
+  const target = state.outcome || 'FULL BUYBACK';
   appendAll(app, `
     <div class="header"><div class="brand"><span class="mark">§</span> The Lemon Law Calculator</div></div>
     <div class="content reveal" style="text-align:left; padding-top:18px; padding-bottom:8px;">
-      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">What your answers show</div>
-      <div class="readout" id="reveal-readout" style="font-size:44px; margin:2px 0 0 0;"></div>
-      <div class="readout-label" style="margin-bottom:2px;">of ${TOTAL_SIGNALS} things California lemon law looks at</div>
-      <div class="readout-label" style="margin-bottom:16px;">Based on what you\u2019ve shared</div>
+      <div class="eyebrow" style="text-align:left; margin-bottom:2px;">Your result</div>
+      <div class="readout" id="reveal-readout" style="font-size:34px; margin:2px 0 0 0; letter-spacing:0.01em;"></div>
+      <div class="readout-label" style="margin-bottom:10px;">based on what you’ve shared</div>
 
-      ${checklistHtml}
-      ${highlightHtml}
-
-      <p style="font-size:12.5px; line-height:1.6; color:var(--ink-faint); margin:16px 0 24px 0; padding-top:16px; border-top:1px solid var(--line);">
-        When a lemon law claim succeeds, California law can require the manufacturer to buy the vehicle back, replace it, or pay compensation — and to pay your attorney\u2019s fees on top of that. Which of those applies to you depends on details an attorney still needs to confirm, starting with your repair orders.
-      </p>
-
-      <div class="eyebrow" style="margin-top:10px; text-align:center;">Have an attorney call you</div>
+      <div class="eyebrow" style="margin-top:4px; text-align:center;">Have an attorney call you</div>
       <h1 class="q" style="font-size:22px; margin-bottom:6px; text-align:center;">Where should they reach you?</h1>
-      <p class="sub" style="margin-bottom:20px; text-align:center;">Free, with no obligation. An attorney will call you within a business day.</p>
+      <p class="sub" style="margin-bottom:12px; text-align:center;">Free, with no obligation. An attorney will call you within a business day.</p>
       <div class="field">
         <label for="f-name">Full name</label>
         <input id="f-name" type="text" placeholder="Jane Rivera" value="${state.contact.name}">
@@ -679,16 +660,6 @@ function renderReveal(app){
         <label for="f-freetext">Anything else the attorney should know? <span style="text-transform:none; font-weight:400; color:var(--ink-faint);">(optional)</span></label>
         <textarea id="f-freetext" placeholder="Dates or details in your own words — this doesn't change your result, it just helps the call go faster.">${state.freeText}</textarea>
       </div>
-      <!-- Consent checkbox — unchecked by default. This is a real,
-           affirmative opt-in rather than implied-by-submitting
-           consent, matching the TCPA-style express consent
-           standard the referred attorney's spec calls for. -->
-      <div class="field" style="display:flex; gap:10px; align-items:flex-start;">
-        <input id="f-consent" type="checkbox" style="width:18px; height:18px; margin-top:2px; flex:0 0 auto;">
-        <label for="f-consent" style="text-transform:none; font-weight:400; font-size:12.5px; line-height:1.6; color:var(--ink-soft); letter-spacing:0;">
-          I agree to be contacted about my case by phone, text, or email, including by automated dialing or prerecorded messages, even if my number is on a do-not-call list. Message and data rates may apply — reply STOP to opt out. Consent is not a condition of representation. I agree to the Terms and Privacy Policy.
-        </label>
-      </div>
       <!-- Honeypot — same bot-detection pattern as the other verticals -->
       <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
         <label for="f-website">Website</label>
@@ -697,11 +668,12 @@ function renderReveal(app){
     </div>
     <div class="footer" style="position:static; background:none; padding-top:4px;">
       <button class="btn btn-primary" id="contact-submit">Submit</button>
+      <p class="consent" style="margin-top:2px;">By submitting, you agree to be contacted about your case by phone, text, or email, including by automated means, even if your number is on a do-not-call list. Consent isn’t required to use this service. You agree to our Terms and Privacy Policy.</p>
       <div class="disclaimer" style="text-align:left; margin-top:8px; border-top:1px solid var(--line); padding-top:16px;">
-        This is general and educational information — it reflects what your own answers show against publicly available legal criteria, not a legal opinion about your specific situation. It is not legal advice, not attorney advertising, and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what it may actually qualify for.
+        This result is general and educational — it’s based on patterns in similar cases, not a legal opinion about your specific situation. It is not legal advice and does not create an attorney-client relationship. Only a licensed attorney reviewing your full case can determine what your case may actually qualify for.
       </div>
       <div class="disclaimer" style="text-align:left; margin-top:10px;">
-        No outcome is guaranteed. Every case must be independently evaluated by a licensed attorney. By submitting this form, you agree to have your information shared with an attorney for review.
+        The result shown is not guaranteed and is not a final case outcome. Every case must be independently evaluated by a licensed attorney. By submitting this form, you agree to have your information shared with an attorney for review. Nothing on this site constitutes attorney advice.
       </div>
     </div>
   `);
@@ -716,12 +688,6 @@ function renderReveal(app){
     if (!state.contact.name.trim() || (!state.contact.phone.trim() && !state.contact.email.trim())) {
       submitBtn.textContent = 'Please add your name and phone or email';
       setTimeout(() => { submitBtn.textContent = 'Submit'; }, 2200);
-      return;
-    }
-
-    if (!document.getElementById('f-consent').checked) {
-      submitBtn.textContent = 'Please check the box above to continue';
-      setTimeout(() => { submitBtn.textContent = 'Submit'; }, 2400);
       return;
     }
 
@@ -754,8 +720,9 @@ function renderReveal(app){
       phone: state.contact.phone,
       email: state.contact.email,
       categories: [state.answers['vehicleType']?.label || 'Lemon Law'],
-      tierLabel: signals.length + ' of 3 lemon law signals',
-      estimateDisplay: '', // intentionally blank — see computeResult's compliance note; this vertical no longer estimates or predicts an outcome
+      tierLabel: TIERS[state.tierIndex].label,
+      estimateDisplay: tierDisplayValue(TIERS[state.tierIndex]),
+      outcome: state.outcome,
       freeText: state.freeText,
       answers: [...answers, ...trackingAnswers],
       website: document.getElementById('f-website').value,
@@ -783,15 +750,15 @@ function renderReveal(app){
   };
 
   const readoutEl = document.getElementById('reveal-readout');
-  const target = String(signals.length);
   const chars = target.split('');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const glyphs = ['0','1','2','3','4','5','6','7','8','9'];
+  const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   chars.forEach((ch, i) => {
     const span = document.createElement('span');
     span.className = 'digit';
     readoutEl.appendChild(span);
-    if (!/[0-9]/.test(ch) || reduceMotion){ span.textContent = ch; return; }
+    if (ch === ' '){ span.style.minWidth = '0.5ch'; span.textContent = ' '; return; }
+    if (!/[A-Z]/.test(ch) || reduceMotion){ span.textContent = ch; return; }
     let ticks = 0; const maxTicks = 6 + i;
     const iv = setInterval(() => {
       span.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
